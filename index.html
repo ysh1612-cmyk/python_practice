@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K-ECO SIM | 한국환경공단 환경 시뮬레이션 종합 플랫폼</title>
+<meta name="description" content="탄소중립·자원순환·대기질·신재생에너지·무공해차·물환경 6대 영역 3D 시뮬레이션 계산도구">
+
+<!-- ========== 외부 라이브러리 CSS ========== -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.css">
+<link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<!-- ================= 로딩 스플래시 ================= -->
+<div id="splash">
+  <div class="splash-inner">
+    <div class="splash-logo">K-ECO<span>SIM</span></div>
+    <div class="splash-bar"><i></i></div>
+    <p id="splashMsg">환경 시뮬레이션 엔진 초기화 중…</p>
+  </div>
+</div>
+
+<!-- ================= 헤더 ================= -->
+<header id="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 40 40" class="brand-mark" aria-hidden="true">
+      <circle cx="20" cy="20" r="18" fill="none" stroke="var(--eco)" stroke-width="2.5"/>
+      <path d="M20 30c0-7 4-12 11-13-1 8-5 12-11 13z" fill="var(--eco)"/>
+      <path d="M20 30c0-6-3-10-9-11 1 7 4 10 9 11z" fill="var(--aqua)" opacity=".85"/>
+      <path d="M20 31v-9" stroke="var(--eco)" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1>K-ECO SIM</h1>
+      <p>한국환경공단 환경 시뮬레이션 종합 플랫폼</p>
+    </div>
+  </div>
+
+  <nav id="tabs">
+    <button class="tab active" data-view="home"><span>🏠</span>대시보드</button>
+    <button class="tab" data-view="carbon"><span>🌡️</span>탄소중립</button>
+    <button class="tab" data-view="waste"><span>♻️</span>자원순환</button>
+    <button class="tab" data-view="air"><span>🏭</span>대기확산</button>
+    <button class="tab" data-view="energy"><span>⚡</span>신재생</button>
+    <button class="tab" data-view="ev"><span>🔌</span>무공해차</button>
+    <button class="tab" data-view="water"><span>💧</span>물환경</button>
+    <button class="tab" data-view="report"><span>📄</span>보고서</button>
+  </nav>
+
+  <div class="topbar-right">
+    <span id="clock" class="clock"></span>
+    <button id="themeBtn" class="icon-btn" title="라이트/다크 전환">🌙</button>
+  </div>
+</header>
+
+<main id="app">
+
+<!-- ============================================================ -->
+<!-- 0. 대시보드                                                   -->
+<!-- ============================================================ -->
+<section class="view active" id="view-home">
+  <div id="heroParticles"></div>
+
+  <div class="hero">
+    <div class="hero-text" data-aos="fade-right">
+      <span class="pill">2050 탄소중립 · 자원순환사회 실현</span>
+      <h2>환경 데이터를 <em>3D로 계산</em>하고<br>정책을 <em>시뮬레이션</em>합니다</h2>
+      <p>온실가스 인벤토리부터 대기확산 모델링, 자원순환 흐름 분석, 신재생에너지 발전량 예측,
+         무공해차 충전인프라 입지 최적화, 하수처리 공정 진단까지 —
+         한국환경공단 6대 핵심 업무를 하나의 도구에서 계산합니다.</p>
+      <div class="hero-btns">
+        <button class="btn primary" data-goto="carbon">시뮬레이션 시작 →</button>
+        <button class="btn ghost" id="tourBtn">3분 둘러보기</button>
+      </div>
+    </div>
+    <div class="hero-3d" id="heroGlobe" data-aos="fade-left"></div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi" data-aos="fade-up" data-aos-delay="0">
+      <span class="kpi-label">국가 온실가스 배출량 (2022)</span>
+      <span class="kpi-num" data-count="624.7" data-dec="1">0</span>
+      <span class="kpi-unit">백만톤 CO₂eq</span>
+      <span class="kpi-trend down">▼ 3.5% 전년 대비</span>
+    </div>
+    <div class="kpi" data-aos="fade-up" data-aos-delay="80">
+      <span class="kpi-label">생활폐기물 재활용률</span>
+      <span class="kpi-num" data-count="56.7" data-dec="1">0</span>
+      <span class="kpi-unit">%</span>
+      <span class="kpi-trend up">▲ 목표 2030년 70%</span>
+    </div>
+    <div class="kpi" data-aos="fade-up" data-aos-delay="160">
+      <span class="kpi-label">재생에너지 발전 비중</span>
+      <span class="kpi-num" data-count="9.6" data-dec="1">0</span>
+      <span class="kpi-unit">%</span>
+      <span class="kpi-trend up">▲ 목표 2030년 21.6%</span>
+    </div>
+    <div class="kpi" data-aos="fade-up" data-aos-delay="240">
+      <span class="kpi-label">전기차 누적 보급</span>
+      <span class="kpi-num" data-count="606000" data-dec="0">0</span>
+      <span class="kpi-unit">대</span>
+      <span class="kpi-trend up">▲ 목표 2030년 450만대</span>
+    </div>
+  </div>
+
+  <h3 class="sec-title" data-aos="fade-up">6대 시뮬레이션 모듈</h3>
+  <div class="module-grid">
+    <article class="module" data-goto="carbon" data-aos="zoom-in">
+      <div class="module-ico">🌡️</div>
+      <h4>탄소중립 인벤토리</h4>
+      <p>전력·가스·수송·폐기물 활동자료를 국가 배출계수로 환산해 조직/지자체 온실가스 배출량을 산정하고 감축 시나리오를 3D 도시로 시각화합니다.</p>
+      <span class="module-tag">IPCC 2006 GL · 국가 배출계수</span>
+    </article>
+    <article class="module" data-goto="waste" data-aos="zoom-in" data-aos-delay="60">
+      <div class="module-ico">♻️</div>
+      <h4>자원순환 흐름 분석</h4>
+      <p>발생–선별–재활용–소각–매립 물질흐름(MFA)을 Sankey로 추적하고, 재활용률 개선 시 회피 온실가스와 매립지 잔여수명을 계산합니다.</p>
+      <span class="module-tag">MFA · LandGEM 간이모델</span>
+    </article>
+    <article class="module" data-goto="air" data-aos="zoom-in" data-aos-delay="120">
+      <div class="module-ico">🏭</div>
+      <h4>대기오염 확산 모델</h4>
+      <p>가우시안 플룸 방정식으로 굴뚝 배출 오염물질의 지표 농도를 계산하고, 풍속·대기안정도에 따른 3D 연기 거동을 실시간 렌더링합니다.</p>
+      <span class="module-tag">Gaussian Plume · Pasquill-Gifford</span>
+    </article>
+    <article class="module" data-goto="energy" data-aos="zoom-in" data-aos-delay="180">
+      <div class="module-ico">⚡</div>
+      <h4>신재생에너지 발전량</h4>
+      <p>태양광 PVWatts 방식과 풍력 Betz 출력식을 적용해 지역별 연간 발전량·이용률·회수기간(Payback)을 산정합니다.</p>
+      <span class="module-tag">PVWatts · Betz Limit</span>
+    </article>
+    <article class="module" data-goto="ev" data-aos="zoom-in" data-aos-delay="240">
+      <div class="module-ico">🔌</div>
+      <h4>무공해차 충전인프라</h4>
+      <p>전기차 보급 대수 기반 충전기 소요량·전력수요를 산정하고, 지도 위에서 격자 수요 가중 입지 최적화(K-Means)를 수행합니다.</p>
+      <span class="module-tag">K-Means · 수요가중 입지</span>
+    </article>
+    <article class="module" data-goto="water" data-aos="zoom-in" data-aos-delay="300">
+      <div class="module-ico">💧</div>
+      <h4>하수처리 공정 진단</h4>
+      <p>유입 수질·유량으로 단위공정별 BOD/T-N/T-P 제거율, 슬러지 발생량, 전력원단위와 방류수 수질기준 적합 여부를 진단합니다.</p>
+      <span class="module-tag">A2O 공정 · 방류수 수질기준</span>
+    </article>
+  </div>
+
+  <h3 class="sec-title" data-aos="fade-up">적용 기술 스택</h3>
+  <div class="stack" id="stackList"></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 1. 탄소중립                                                   -->
+<!-- ============================================================ -->
+<section class="view" id="view-carbon">
+  <div class="view-head">
+    <h2>🌡️ 탄소중립 인벤토리 시뮬레이터</h2>
+    <p>활동자료(에너지 사용량)를 입력하면 <b>2006 IPCC 가이드라인</b>과 <b>국가 온실가스 배출계수</b>에 따라
+       Scope 1·2 배출량을 산정합니다. 감축 시나리오를 조정하면 3D 도시 모형과 감축경로가 즉시 갱신됩니다.</p>
+  </div>
+
+  <div class="work">
+    <aside class="panel">
+      <h3 class="panel-title">활동자료 입력</h3>
+
+      <div class="field">
+        <label>전력 사용량 <b id="lbl-elec">250,000</b> kWh/년</label>
+        <input type="range" id="in-elec" min="0" max="2000000" step="10000" value="250000">
+        <small>배출계수 0.4594 kgCO₂eq/kWh (2021 국가 전력)</small>
+      </div>
+      <div class="field">
+        <label>도시가스(LNG) <b id="lbl-gas">30,000</b> m³/년</label>
+        <input type="range" id="in-gas" min="0" max="300000" step="1000" value="30000">
+        <small>배출계수 2.176 kgCO₂eq/m³</small>
+      </div>
+      <div class="field">
+        <label>휘발유 차량 <b id="lbl-gasoline">12,000</b> L/년</label>
+        <input type="range" id="in-gasoline" min="0" max="200000" step="1000" value="12000">
+        <small>배출계수 2.097 kgCO₂/L</small>
+      </div>
+      <div class="field">
+        <label>경유 차량 <b id="lbl-diesel">18,000</b> L/년</label>
+        <input type="range" id="in-diesel" min="0" max="200000" step="1000" value="18000">
+        <small>배출계수 2.582 kgCO₂/L</small>
+      </div>
+      <div class="field">
+        <label>상수도 사용량 <b id="lbl-water">15,000</b> m³/년</label>
+        <input type="range" id="in-water" min="0" max="200000" step="1000" value="15000">
+        <small>배출계수 0.332 kgCO₂/m³</small>
+      </div>
+      <div class="field">
+        <label>폐기물 소각 처리 <b id="lbl-waste">120</b> 톤/년</label>
+        <input type="range" id="in-waste" min="0" max="3000" step="10" value="120">
+        <small>배출계수 1.10 tCO₂/t (생활폐기물 평균)</small>
+      </div>
+
+      <h3 class="panel-title" style="margin-top:22px">감축 시나리오</h3>
+      <div class="field">
+        <label>에너지효율 개선 <b id="lbl-eff">15</b>%</label>
+        <input type="range" id="in-eff" min="0" max="60" step="1" value="15">
+      </div>
+      <div class="field">
+        <label>재생에너지 전환(RE100) <b id="lbl-re">20</b>%</label>
+        <input type="range" id="in-re" min="0" max="100" step="1" value="20">
+      </div>
+      <div class="field">
+        <label>차량 전동화 <b id="lbl-eveff">10</b>%</label>
+        <input type="range" id="in-eveff" min="0" max="100" step="1" value="10">
+      </div>
+
+      <button class="btn primary full" id="carbonApply">시나리오 적용 · 재계산</button>
+      <button class="btn ghost full" id="carbonPreset">지자체 표준 시나리오 불러오기</button>
+    </aside>
+
+    <div class="stage">
+      <div class="result-row">
+        <div class="rcard">
+          <span class="rlabel">현재 총배출량</span>
+          <span class="rnum" id="out-total">0</span><span class="runit">tCO₂eq/년</span>
+        </div>
+        <div class="rcard eco">
+          <span class="rlabel">감축 후 배출량</span>
+          <span class="rnum" id="out-after">0</span><span class="runit">tCO₂eq/년</span>
+        </div>
+        <div class="rcard aqua">
+          <span class="rlabel">감축량</span>
+          <span class="rnum" id="out-cut">0</span><span class="runit">tCO₂eq/년</span>
+        </div>
+        <div class="rcard warn">
+          <span class="rlabel">상쇄 필요 나무</span>
+          <span class="rnum" id="out-tree">0</span><span class="runit">그루 (30년생 소나무)</span>
+        </div>
+      </div>
+
+      <div class="canvas-box">
+        <div class="canvas-head">
+          <h4>3D 배출 도시 모형</h4>
+          <span class="hint">드래그 회전 · 휠 확대 · 막대 높이 = 부문별 배출량</span>
+        </div>
+        <div class="three-host" id="carbon3d"></div>
+      </div>
+
+      <div class="chart-2col">
+        <div class="chart-box"><h4>부문별 배출 구성</h4><canvas id="carbonDonut"></canvas></div>
+        <div class="chart-box"><h4>2050 탄소중립 감축경로</h4><canvas id="carbonPath"></canvas></div>
+      </div>
+
+      <div class="equiv" id="carbonEquiv"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. 자원순환                                                   -->
+<!-- ============================================================ -->
+<section class="view" id="view-waste">
+  <div class="view-head">
+    <h2>♻️ 자원순환 물질흐름 시뮬레이터</h2>
+    <p>폐기물 발생량과 성상별 구성비를 입력하면 <b>물질흐름분석(MFA)</b>으로 재활용·소각·매립 경로를 추적하고,
+       재활용 확대에 따른 <b>회피 온실가스</b>와 <b>매립지 잔여수명</b>을 계산합니다.</p>
+  </div>
+
+  <div class="work">
+    <aside class="panel">
+      <h3 class="panel-title">폐기물 발생 원단위</h3>
+      <div class="field">
+        <label>대상 인구 <b id="lbl-pop">300,000</b> 명</label>
+        <input type="range" id="in-pop" min="10000" max="3000000" step="10000" value="300000">
+      </div>
+      <div class="field">
+        <label>1인당 발생량 <b id="lbl-percap">0.95</b> kg/일</label>
+        <input type="range" id="in-percap" min="0.3" max="2.0" step="0.01" value="0.95">
+        <small>전국 평균 약 0.95 kg/인·일</small>
+      </div>
+
+      <h3 class="panel-title" style="margin-top:20px">성상별 구성비 (%)</h3>
+      <div class="mini-grid" id="wasteComp">
+        <label>종이 <input type="number" class="num" id="c-paper" value="24" min="0" max="100"></label>
+        <label>플라스틱 <input type="number" class="num" id="c-plastic" value="19" min="0" max="100"></label>
+        <label>음식물 <input type="number" class="num" id="c-food" value="28" min="0" max="100"></label>
+        <label>유리 <input type="number" class="num" id="c-glass" value="7" min="0" max="100"></label>
+        <label>금속 <input type="number" class="num" id="c-metal" value="6" min="0" max="100"></label>
+        <label>기타 <input type="number" class="num" id="c-etc" value="16" min="0" max="100"></label>
+      </div>
+      <div class="sum-note">합계 <b id="compSum">100</b>% <span id="compWarn"></span></div>
+
+      <h3 class="panel-title" style="margin-top:20px">처리 정책</h3>
+      <div class="field">
+        <label>분리배출 참여율 <b id="lbl-sep">78</b>%</label>
+        <input type="range" id="in-sep" min="0" max="100" step="1" value="78">
+      </div>
+      <div class="field">
+        <label>선별시설 회수효율 <b id="lbl-sort">85</b>%</label>
+        <input type="range" id="in-sort" min="30" max="98" step="1" value="85">
+      </div>
+      <div class="field">
+        <label>잔재물 중 소각 비율 <b id="lbl-inc">70</b>%</label>
+        <input type="range" id="in-inc" min="0" max="100" step="1" value="70">
+        <small>나머지는 직매립 (2026년 수도권 직매립 금지)</small>
+      </div>
+      <div class="field">
+        <label>매립지 잔여 용량 <b id="lbl-cap">1,200,000</b> m³</label>
+        <input type="range" id="in-cap" min="100000" max="10000000" step="100000" value="1200000">
+      </div>
+      <button class="btn primary full" id="wasteApply">물질흐름 재계산</button>
+    </aside>
+
+    <div class="stage">
+      <div class="result-row">
+        <div class="rcard"><span class="rlabel">연간 발생량</span><span class="rnum" id="w-total">0</span><span class="runit">톤/년</span></div>
+        <div class="rcard eco"><span class="rlabel">재활용률</span><span class="rnum" id="w-rate">0</span><span class="runit">%</span></div>
+        <div class="rcard aqua"><span class="rlabel">회피 온실가스</span><span class="rnum" id="w-ghg">0</span><span class="runit">tCO₂eq/년</span></div>
+        <div class="rcard warn"><span class="rlabel">매립지 잔여수명</span><span class="rnum" id="w-life">0</span><span class="runit">년</span></div>
+      </div>
+
+      <div class="canvas-box">
+        <div class="canvas-head"><h4>3D 자원순환 처리 흐름</h4>
+          <span class="hint">발생 → 선별 → 재활용/소각/매립 입자 흐름 실시간 시뮬레이션</span></div>
+        <div class="three-host" id="waste3d"></div>
+      </div>
+
+      <div class="chart-2col">
+        <div class="chart-box wide"><h4>물질흐름 Sankey 다이어그램 (D3.js)</h4><div id="wasteSankey"></div></div>
+      </div>
+      <div class="chart-2col">
+        <div class="chart-box"><h4>성상별 재활용 잠재량</h4><canvas id="wasteBar"></canvas></div>
+        <div class="chart-box"><h4>재활용률 시나리오별 회피배출</h4><canvas id="wasteLine"></canvas></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. 대기확산                                                   -->
+<!-- ============================================================ -->
+<section class="view" id="view-air">
+  <div class="view-head">
+    <h2>🏭 대기오염물질 확산 시뮬레이터</h2>
+    <p><b>가우시안 플룸 모델</b>과 <b>Pasquill-Gifford 확산계수</b>로 굴뚝 배출 오염물질의 풍하방향 지표 농도를 계산합니다.
+       유효굴뚝높이는 <b>Holland 상승식</b>으로 보정됩니다.</p>
+  </div>
+
+  <div class="work">
+    <aside class="panel">
+      <h3 class="panel-title">배출원 제원</h3>
+      <div class="field"><label>굴뚝 높이 <b id="lbl-h">60</b> m</label>
+        <input type="range" id="in-h" min="10" max="200" step="5" value="60"></div>
+      <div class="field"><label>굴뚝 내경 <b id="lbl-d">2.5</b> m</label>
+        <input type="range" id="in-d" min="0.5" max="8" step="0.1" value="2.5"></div>
+      <div class="field"><label>배출가스 유속 <b id="lbl-vs">15</b> m/s</label>
+        <input type="range" id="in-vs" min="1" max="40" step="1" value="15"></div>
+      <div class="field"><label>배출가스 온도 <b id="lbl-ts">150</b> ℃</label>
+        <input type="range" id="in-ts" min="30" max="400" step="5" value="150"></div>
+      <div class="field"><label>오염물질 배출률 Q <b id="lbl-q">80</b> g/s</label>
+        <input type="range" id="in-q" min="1" max="500" step="1" value="80"></div>
+
+      <h3 class="panel-title" style="margin-top:20px">기상 조건</h3>
+      <button class="btn ghost full" style="margin-bottom:12px; font-size:12px; color:var(--aqua); border-color:var(--aqua);" onclick="window.fetchRealtimeWeatherData()">📡 실시간 기상/풍속 API 연동</button>
+      <div class="field"><label>풍속 <b id="lbl-u">4.0</b> m/s</label>
+        <input type="range" id="in-u" min="0.5" max="20" step="0.5" value="4"></div>
+      <div class="field"><label>대기온도 <b id="lbl-ta">20</b> ℃</label>
+        <input type="range" id="in-ta" min="-15" max="40" step="1" value="20"></div>
+      <div class="field">
+        <label>대기안정도 (Pasquill)</label>
+        <select id="in-stab" class="sel">
+          <option value="A">A — 매우 불안정 (강한 일사)</option>
+          <option value="B">B — 불안정</option>
+          <option value="C">C — 약간 불안정</option>
+          <option value="D" selected>D — 중립 (흐림/야간)</option>
+          <option value="E">E — 약간 안정</option>
+          <option value="F">F — 안정 (야간 정온)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>지형 구분</label>
+        <select id="in-terrain" class="sel">
+          <option value="rural">전원(Rural)</option>
+          <option value="urban" selected>도시(Urban)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>대상 오염물질</label>
+        <select id="in-poll" class="sel">
+          <option value="so2">SO₂ (환경기준 24h 0.05 ppm ≈ 131 ㎍/㎥)</option>
+          <option value="no2">NO₂ (24h 0.06 ppm ≈ 113 ㎍/㎥)</option>
+          <option value="pm10" selected>PM-10 (24h 100 ㎍/㎥)</option>
+          <option value="pm25">PM-2.5 (24h 35 ㎍/㎥)</option>
+        </select>
+      </div>
+      <button class="btn primary full" id="airApply">확산 재계산</button>
+    </aside>
+
+    <div class="stage">
+      <div class="result-row">
+        <div class="rcard"><span class="rlabel">유효굴뚝높이 H<sub>e</sub></span><span class="rnum" id="a-he">0</span><span class="runit">m</span></div>
+        <div class="rcard warn"><span class="rlabel">최대 지표농도</span><span class="rnum" id="a-cmax">0</span><span class="runit">㎍/㎥</span></div>
+        <div class="rcard aqua"><span class="rlabel">최대농도 출현거리</span><span class="rnum" id="a-xmax">0</span><span class="runit">m (풍하)</span></div>
+        <div class="rcard" id="a-judgeCard"><span class="rlabel">환경기준 대비</span><span class="rnum" id="a-judge">-</span><span class="runit" id="a-judgeSub">판정</span></div>
+      </div>
+
+      <div class="canvas-box">
+        <div class="canvas-head"><h4>3D 연기 확산(Plume) 렌더링</h4>
+          <span class="hint">풍속·안정도에 따라 연기 상승/확산 형태가 실시간 변화합니다</span></div>
+        <div class="three-host" id="air3d"></div>
+      </div>
+
+      <div class="chart-2col">
+        <div class="chart-box"><h4>풍하거리별 지표농도 곡선</h4><canvas id="airLine"></canvas></div>
+        <div class="chart-box"><h4>지표농도 등농도선 (D3 Contour)</h4><div id="airContour"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. 신재생에너지                                               -->
+<!-- ============================================================ -->
+<section class="view" id="view-energy">
+  <div class="view-head">
+    <h2>⚡ 신재생에너지 발전량 시뮬레이터</h2>
+    <p>태양광은 <b>PVWatts 방식</b>(설비용량 × 일사시간 × 성능비), 풍력은 <b>Betz 출력식</b>
+       P = ½ρAv³C<sub>p</sub> 을 적용해 연간 발전량·이용률·투자회수기간을 산정합니다.</p>
+  </div>
+
+  <div class="work">
+    <aside class="panel">
+      <h3 class="panel-title">☀️ 태양광 발전설비</h3>
+      <div class="field">
+        <label>설치 지역</label>
+        <select id="in-region" class="sel">
+          <option value="3.2">서울 (일평균 3.2 h)</option>
+          <option value="3.5">인천 (3.5 h)</option>
+          <option value="3.6" selected>대전 (3.6 h)</option>
+          <option value="3.8">대구 (3.8 h)</option>
+          <option value="3.9">광주 (3.9 h)</option>
+          <option value="4.1">부산 (4.1 h)</option>
+          <option value="4.3">제주 (4.3 h)</option>
+        </select>
+      </div>
+      <div class="field"><label>설비용량 <b id="lbl-pv">500</b> kWp</label>
+        <input type="range" id="in-pv" min="10" max="5000" step="10" value="500"></div>
+      <div class="field"><label>모듈 효율 <b id="lbl-peff">20.5</b> %</label>
+        <input type="range" id="in-peff" min="14" max="24" step="0.1" value="20.5"></div>
+      <div class="field"><label>시스템 성능비(PR) <b id="lbl-pr">0.80</b></label>
+        <input type="range" id="in-pr" min="0.6" max="0.9" step="0.01" value="0.8"></div>
+      <div class="field"><label>경사각 <b id="lbl-tilt">30</b>°</label>
+        <input type="range" id="in-tilt" min="0" max="60" step="1" value="30">
+        <small>국내 최적 경사각 약 30°</small></div>
+
+      <h3 class="panel-title" style="margin-top:20px">🌬️ 풍력 발전설비</h3>
+      <div class="field"><label>터빈 기수 <b id="lbl-nwt">3</b> 기</label>
+        <input type="range" id="in-nwt" min="1" max="20" step="1" value="3"></div>
+      <div class="field"><label>로터 직경 <b id="lbl-rot">90</b> m</label>
+        <input type="range" id="in-rot" min="20" max="180" step="5" value="90"></div>
+      <div class="field"><label>연평균 풍속 <b id="lbl-wind">6.5</b> m/s</label>
+        <input type="range" id="in-wind" min="3" max="12" step="0.1" value="6.5"></div>
+      <div class="field"><label>출력계수 C<sub>p</sub> <b id="lbl-cp">0.42</b></label>
+        <input type="range" id="in-cp" min="0.2" max="0.59" step="0.01" value="0.42">
+        <small>Betz 한계 0.593</small></div>
+
+      <h3 class="panel-title" style="margin-top:20px">💰 경제성</h3>
+      <div class="field"><label>SMP+REC 단가 <b id="lbl-smp">160</b> 원/kWh</label>
+        <input type="range" id="in-smp" min="80" max="300" step="5" value="160"></div>
+      <button class="btn primary full" id="energyApply">발전량 재계산</button>
+    </aside>
+
+    <div class="stage">
+      <div class="result-row">
+        <div class="rcard eco"><span class="rlabel">태양광 연간발전량</span><span class="rnum" id="e-pv">0</span><span class="runit">MWh/년</span></div>
+        <div class="rcard aqua"><span class="rlabel">풍력 연간발전량</span><span class="rnum" id="e-wt">0</span><span class="runit">MWh/년</span></div>
+        <div class="rcard"><span class="rlabel">온실가스 감축</span><span class="rnum" id="e-ghg">0</span><span class="runit">tCO₂eq/년</span></div>
+        <div class="rcard warn"><span class="rlabel">투자 회수기간</span><span class="rnum" id="e-pay">0</span><span class="runit">년</span></div>
+      </div>
+
+      <div class="canvas-box">
+        <div class="canvas-head"><h4>3D 발전단지 모형</h4>
+          <span class="hint">태양광 패널 경사각·풍력 회전속도가 입력값에 연동됩니다</span></div>
+        <div class="three-host" id="energy3d"></div>
+      </div>
+
+      <div class="chart-2col">
+        <div class="chart-box"><h4>월별 발전량 예측</h4><canvas id="energyBar"></canvas></div>
+        <div class="chart-box"><h4>풍속-출력 곡선 (Power Curve)</h4><canvas id="energyCurve"></canvas></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. 무공해차                                                   -->
+<!-- ============================================================ -->
+<section class="view" id="view-ev">
+  <div class="view-head">
+    <h2>🔌 무공해차 충전인프라 시뮬레이터</h2>
+    <p>전기차 보급 목표에 따른 <b>충전기 소요량·전력수요·온실가스 감축량</b>을 산정하고,
+       지도 위 수요 격자에 <b>K-Means 군집 최적화</b>를 적용해 충전소 입지를 도출합니다.</p>
+  </div>
+
+  <div class="work">
+    <aside class="panel">
+      <h3 class="panel-title">보급 시나리오</h3>
+      <div class="field"><label>전기차 보급 대수 <b id="lbl-evn">25,000</b> 대</label>
+        <input type="range" id="in-evn" min="1000" max="500000" step="1000" value="25000"></div>
+      <div class="field"><label>연평균 주행거리 <b id="lbl-km">13,000</b> km</label>
+        <input type="range" id="in-km" min="5000" max="30000" step="500" value="13000"></div>
+      <div class="field"><label>전비 <b id="lbl-eff2">5.2</b> km/kWh</label>
+        <input type="range" id="in-eff2" min="3" max="7" step="0.1" value="5.2"></div>
+      <div class="field"><label>급속충전기 비중 <b id="lbl-fast">22</b>%</label>
+        <input type="range" id="in-fast" min="0" max="60" step="1" value="22"></div>
+      <div class="field"><label>충전기 1기당 담당 차량 <b id="lbl-ratio">7.5</b> 대</label>
+        <input type="range" id="in-ratio" min="2" max="20" step="0.5" value="7.5">
+        <small>환경부 목표 2030년 약 2.0~3.0대/기</small></div>
+      <div class="field"><label>재생에너지 충전 비율 <b id="lbl-green">20</b>%</label>
+        <input type="range" id="in-green" min="0" max="100" step="1" value="20"></div>
+
+      <h3 class="panel-title" style="margin-top:20px">입지 최적화</h3>
+      <div class="field"><label>설치 후보 충전소 수 <b id="lbl-k">8</b> 개소</label>
+        <input type="range" id="in-k" min="3" max="20" step="1" value="8"></div>
+      <button class="btn primary full" id="evApply">수요 재계산</button>
+      <button class="btn ghost full" id="evOptimize">K-Means 입지 최적화 실행</button>
+    </aside>
+
+    <div class="stage">
+      <div class="result-row">
+        <div class="rcard"><span class="rlabel">필요 충전기</span><span class="rnum" id="v-chg">0</span><span class="runit">기 (완속+급속)</span></div>
+        <div class="rcard aqua"><span class="rlabel">연간 충전 전력수요</span><span class="rnum" id="v-pow">0</span><span class="runit">GWh/년</span></div>
+        <div class="rcard eco"><span class="rlabel">온실가스 감축</span><span class="rnum" id="v-ghg">0</span><span class="runit">tCO₂eq/년</span></div>
+        <div class="rcard warn"><span class="rlabel">첨두 계약전력</span><span class="rnum" id="v-peak">0</span><span class="runit">MW</span></div>
+      </div>
+
+      <div class="canvas-box">
+        <div class="canvas-head"><h4>충전수요 격자 & 최적 입지 (Leaflet)</h4>
+          <span class="hint">원 크기 = 수요밖도 · ⚡ 마커 = K-Means 최적 입지</span></div>
+        <div id="evMap" style="height:380px;border-radius:12px"></div>
+      </div>
+
+      <div class="chart-2col">
+        <div class="chart-box"><h4>시간대별 충전부하 프로파일</h4><canvas id="evLoad"></canvas></div>
+        <div class="chart-box"><h4>내연기관차 대비 배출 비교</h4><canvas id="evCompare"></canvas></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. 물환경                                                     -->
+<!-- ============================================================ -->
+<section class="view" id="view-water">
+  <div class="view-head">
+    <h2>💧 하수처리 공정 진단 시뮬레이터</h2>
+    <p>유입 유량·수질을 입력하면 <b>A²O(혐기-무산소-호기) 공정</b> 단위공정별 제거율을 적용해
+       방류수질을 예측하고 <b>공공하수처리시설 방류수 수질기준(Ⅲ지역)</b> 적합 여부를 진단합니다.
+       기준: BOD 10 · COD 40 · SS 10 · T-N 20 · T-P 0.5 mg/L 이하</p>
+  </div>
+
+  <div class="work">
+    <aside class="panel">
+      <h3 class="panel-title">유입 조건</h3>
+      <div class="field"><label>계획 유량 <b id="lbl-qin">30,000</b> m³/일</label>
+        <input type="range" id="in-qin" min="1000" max="500000" step="1000" value="30000"></div>
+      <div class="field"><label>유입 BOD <b id="lbl-bod">180</b> mg/L</label>
+        <input type="range" id="in-bod" min="50" max="500" step="5" value="180"></div>
+      <div class="field"><label>유입 SS <b id="lbl-ss">200</b> mg/L</label>
+        <input type="range" id="in-ss" min="50" max="600" step="5" value="200"></div>
+      <div class="field"><label>유입 T-N <b id="lbl-tn">40</b> mg/L</label>
+        <input type="range" id="in-tn" min="10" max="100" step="1" value="40"></div>
+      <div class="field"><label>유입 T-P <b id="lbl-tp">4.5</b> mg/L</label>
+        <input type="range" id="in-tp" min="1" max="15" step="0.1" value="4.5"></div>
+
+      <h3 class="panel-title" style="margin-top:20px">운전 조건</h3>
+      <div class="field"><label>MLSS <b id="lbl-mlss">3,200</b> mg/L</label>
+        <input type="range" id="in-mlss" min="1500" max="6000" step="100" value="3200"></div>
+      <div class="field"><label>SRT (슬러지 체류시간) <b id="lbl-srt">12</b> 일</label>
+        <input type="range" id="in-srt" min="3" max="30" step="1" value="12"></div>
+      <div class="field"><label>HRT (수리학적 체류시간) <b id="lbl-hrt">10</b> 시간</label>
+        <input type="range" id="in-hrt" min="4" max="24" step="1" value="10"></div>
+      <div class="field"><label>수온 <b id="lbl-temp">18</b> ℃</label>
+        <input type="range" id="in-temp" min="5" max="30" step="1" value="18"></div>
+      <div class="field">
+        <label>고도처리 공정</label>
+        <select id="in-adv" class="sel">
+          <option value="none">표준활성슬러지법만</option>
+          <option value="a2o" selected>A²O (질소·인 동시제거)</option>
+          <option value="a2o-mbr">A²O + MBR (막분리)</option>
+          <option value="a2o-mbr-o3">A²O + MBR + 오존산화</option>
+        </select>
+      </div>
+      <button class="btn primary full" id="waterApply">공정 진단 실행</button>
+    </aside>
+
+    <div class="stage">
+      <div class="result-row">
+        <div class="rcard eco"><span class="rlabel">방류 BOD</span><span class="rnum" id="q-bod">0</span><span class="runit">mg/L (기준 10 이하)</span></div>
+        <div class="rcard aqua"><span class="rlabel">방류 T-N</span><span class="rnum" id="q-tn">0</span><span class="runit">mg/L (기준 20 이하)</span></div>
+        <div class="rcard"><span class="rlabel">슬러지 발생량</span><span class="rnum" id="q-sludge">0</span><span class="runit">톤/일 (함수율 80%)</span></div>
+        <div class="rcard warn"><span class="rlabel">전력 사용량</span><span class="rnum" id="q-power">0</span><span class="runit">MWh/년</span></div>
+      </div>
+
+      <div class="canvas-box">
+        <div class="canvas-head"><h4>3D 하수처리 공정 계통도</h4>
+          <span class="hint">유입수가 각 반응조를 통과하며 수질이 개선되는 과정을 시각화</span></div>
+        <div class="three-host" id="water3d"></div>
+      </div>
+
+      <div class="chart-2col">
+        <div class="chart-box"><h4>단위공정별 수질 변화</h4><canvas id="waterLine"></canvas></div>
+        <div class="chart-box"><h4>방류수 수질기준 적합도</h4><canvas id="waterRadar"></canvas></div>
+      </div>
+      <div class="equiv" id="waterVerdict"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. 보고서                                                     -->
+<!-- ============================================================ -->
+<section class="view" id="view-report">
+  <div class="view-head">
+    <h2>📄 통합 진단 보고서</h2>
+    <p>6개 모듈의 시뮬레이션 결과를 종합해 진단 보고서를 생성합니다.
+       <b>PDF</b> 또는 <b>Excel</b>로 내려받아 제출자료로 활용할 수 있습니다.</p>
+  </div>
+
+  <div class="report-actions">
+    <button class="btn primary" id="genReport">🔄 보고서 생성 / 갱신</button>
+    <button class="btn ghost" id="pdfBtn">📄 PDF 내려받기</button>
+    <button class="btn ghost" id="xlsBtn">📊 Excel 내려받기</button>
+    <button class="btn ghost" id="printBtn">🖨️ 인쇄</button>
+  </div>
+
+  <div id="reportPaper" class="paper">
+    <p class="paper-empty">「보고서 생성」 버튼을 눌러 주세요.</p>
+  </div>
+</section>
+
+</main>
+
+<footer id="foot">
+  <div>
+    <b>K-ECO SIM</b> · 한국환경공단 환경 시뮬레이션 종합 플랫폼
+    <span class="dot">·</span> 산정근거: 2006 IPCC 국가인벤토리 가이드라인, 국가 온실가스 배출계수,
+    대기환경보전법 시행규칙, 공공하수처리시설 방류수 수질기준
+  </div>
+  <div class="foot-sub">본 도구의 계산 결과는 정책 검토용 참고자료이며, 법정 인·허가 목적의 공식 산정치가 아닙니다.</div>
+</footer>
+
+<!-- ================= 외부 라이브러리 JS ================= -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/numeral.js/2.0.6/numeral.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/countup.js@2.8.0/dist/countUp.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chroma-js@2.4.2/chroma.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<!-- ================= 애플리케이션 ================= -->
+<script src="assets/core.js"></script>
+<script src="assets/sim-carbon.js"></script>
+<script src="assets/sim-waste.js"></script>
+<script src="assets/sim-air.js"></script>
+<script src="assets/sim-energy.js"></script>
+<script src="assets/sim-ev.js"></script>
+<script src="assets/sim-water.js"></script>
+<script src="assets/report.js"></script>
+<script src="assets/boot.js"></script>
+<script src="assets/supabase-app.js"></script>
+</body>
+</html>

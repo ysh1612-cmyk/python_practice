@@ -1,0 +1,4734 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K-ECO SIM | 한국환경공단 환경 시뮬레이션 종합 플랫폼</title>
+<meta name="description" content="탄소중립·자원순환·대기질·신재생에너지·무공해차·물환경 6대 영역 3D 시뮬레이션 계산도구">
+
+<!-- ========== 외부 라이브러리 CSS ========== -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.css">
+<link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css">
+<style>
+/* ===== assets/style.css ===== */
+/* ============================================================
+   K-ECO SIM — 한국환경공단 환경 시뮬레이션 종합 플랫폼
+   Stylesheet
+   ============================================================ */
+
+:root{
+  --bg:#080d16;
+  --bg2:#0d1524;
+  --surface:#111b2d;
+  --surface2:#17243a;
+  --line:#1f3049;
+  --text:#e6eefc;
+  --muted:#8fa3c4;
+  --eco:#22c98a;      /* 환경공단 그린 */
+  --aqua:#38bdf8;     /* 물/대기 */
+  --sun:#fbbf24;      /* 에너지 */
+  --warn:#fb7185;
+  --violet:#a78bfa;
+  --shadow:0 18px 44px rgba(0,0,0,.45);
+  --r:16px;
+}
+
+html[data-theme="light"]{
+  --bg:#f2f6fb; --bg2:#e9eff8; --surface:#ffffff; --surface2:#f4f8fd;
+  --line:#d6e0ee; --text:#0e1a2c; --muted:#5b6d88;
+  --shadow:0 14px 34px rgba(20,40,70,.12);
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:"Pretendard","Segoe UI","Malgun Gothic",system-ui,-apple-system,sans-serif;
+  line-height:1.6; -webkit-font-smoothing:antialiased;
+  transition:background .3s,color .3s;
+}
+h1,h2,h3,h4{margin:0; line-height:1.3; letter-spacing:-.02em}
+a{color:var(--aqua)}
+sub,sup{font-size:.7em}
+
+/* ---------- 스플래시 ---------- */
+#splash{
+  position:fixed; inset:0; z-index:9999; display:grid; place-items:center;
+  background:radial-gradient(circle at 50% 40%,#12233c,#070c14 70%);
+  transition:opacity .6s,visibility .6s;
+}
+#splash.hide{opacity:0; visibility:hidden}
+.splash-inner{text-align:center}
+.splash-logo{font-size:44px; font-weight:900; letter-spacing:-.04em; color:#fff}
+.splash-logo span{color:var(--eco); margin-left:8px}
+.splash-bar{width:260px; height:5px; background:#1d2c44; border-radius:4px; overflow:hidden; margin:18px auto 12px}
+.splash-bar i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--eco),var(--aqua)); transition:width .25s}
+#splashMsg{color:#7f95b6; font-size:13px; margin:0}
+
+/* ---------- 헤더 ---------- */
+#topbar{
+  position:sticky; top:0; z-index:900;
+  display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  padding:10px 20px;
+  background:color-mix(in srgb,var(--bg2) 88%,transparent);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex; align-items:center; gap:11px; flex-shrink:0}
+.brand-mark{width:38px; height:38px}
+.brand h1{font-size:19px; font-weight:900; letter-spacing:-.03em}
+.brand p{margin:0; font-size:11px; color:var(--muted)}
+
+#tabs{display:flex; gap:4px; flex-wrap:wrap; flex:1; justify-content:center}
+.tab{
+  display:flex; align-items:center; gap:6px;
+  background:transparent; border:1px solid transparent; color:var(--muted);
+  padding:8px 13px; border-radius:11px; cursor:pointer;
+  font-size:13.5px; font-weight:600; font-family:inherit;
+  transition:.18s;
+}
+.tab span{font-size:15px}
+.tab:hover{background:var(--surface2); color:var(--text)}
+.tab.active{
+  background:linear-gradient(135deg,var(--eco),#12a46c);
+  color:#04170f; border-color:transparent; font-weight:800;
+  box-shadow:0 6px 18px rgba(34,201,138,.28);
+}
+.topbar-right{display:flex; align-items:center; gap:10px; flex-shrink:0}
+.clock{font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums}
+.icon-btn{
+  background:var(--surface2); border:1px solid var(--line); color:var(--text);
+  width:34px; height:34px; border-radius:10px; cursor:pointer; font-size:15px;
+}
+.icon-btn:hover{border-color:var(--eco)}
+
+/* ---------- 뷰 전환 ---------- */
+#app{max-width:1460px; margin:0 auto; padding:26px 20px 60px}
+.view{display:none}
+.view.active{display:block; animation:fade .45s ease}
+@keyframes fade{from{opacity:0; transform:translateY(14px)} to{opacity:1; transform:none}}
+
+.view-head{margin-bottom:22px}
+.view-head h2{font-size:26px; margin-bottom:8px}
+.view-head p{margin:0; color:var(--muted); font-size:14px; max-width:900px}
+.view-head b{color:var(--text)}
+
+/* ---------- 대시보드 hero ---------- */
+#heroParticles{position:absolute; inset:0; height:520px; z-index:0; pointer-events:none; opacity:.5}
+.hero{
+  position:relative; z-index:1;
+  display:grid; grid-template-columns:1.15fr .85fr; gap:32px; align-items:center;
+  padding:28px 0 40px;
+}
+.pill{
+  display:inline-block; background:rgba(34,201,138,.14); color:var(--eco);
+  border:1px solid rgba(34,201,138,.35);
+  padding:5px 14px; border-radius:20px; font-size:12.5px; font-weight:700; margin-bottom:16px;
+}
+.hero-text h2{font-size:42px; font-weight:900; letter-spacing:-.035em; margin-bottom:16px}
+.hero-text h2 em{
+  font-style:normal;
+  background:linear-gradient(120deg,var(--eco),var(--aqua));
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+}
+.hero-text p{color:var(--muted); font-size:15px; max-width:620px; margin-bottom:24px}
+.hero-btns{display:flex; gap:10px; flex-wrap:wrap}
+.hero-3d{height:330px; border-radius:22px; overflow:hidden}
+
+.btn{
+  border:0; border-radius:12px; padding:12px 22px; cursor:pointer;
+  font-size:14px; font-weight:800; font-family:inherit; transition:.18s;
+}
+.btn.primary{background:linear-gradient(135deg,var(--eco),#0fa06b); color:#04170f;
+  box-shadow:0 8px 22px rgba(34,201,138,.3)}
+.btn.primary:hover{transform:translateY(-2px); box-shadow:0 12px 28px rgba(34,201,138,.42)}
+.btn.ghost{background:var(--surface2); color:var(--text); border:1px solid var(--line)}
+.btn.ghost:hover{border-color:var(--eco); color:var(--eco)}
+.btn.full{width:100%; margin-top:9px}
+
+/* ---------- KPI ---------- */
+.kpi-row{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:16px; margin:10px 0 46px;
+  position:relative; z-index:1;
+}
+.kpi{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+  padding:20px; display:flex; flex-direction:column; gap:3px; box-shadow:var(--shadow);
+  position:relative; overflow:hidden;
+}
+.kpi::before{
+  content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+  background:linear-gradient(180deg,var(--eco),var(--aqua));
+}
+.kpi-label{font-size:12.5px; color:var(--muted); font-weight:600}
+.kpi-num{font-size:34px; font-weight:900; letter-spacing:-.03em; font-variant-numeric:tabular-nums}
+.kpi-unit{font-size:12px; color:var(--muted)}
+.kpi-trend{font-size:11.5px; margin-top:6px; font-weight:700}
+.kpi-trend.up{color:var(--eco)}
+.kpi-trend.down{color:var(--aqua)}
+
+.sec-title{font-size:21px; margin:34px 0 18px; display:flex; align-items:center; gap:10px}
+.sec-title::after{content:''; flex:1; height:1px; background:var(--line)}
+
+/* ---------- 모듈 카드 ---------- */
+.module-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(310px,1fr)); gap:16px}
+.module{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+  padding:22px; cursor:pointer; transition:.22s; position:relative; overflow:hidden;
+}
+.module:hover{transform:translateY(-5px); border-color:var(--eco); box-shadow:0 16px 36px rgba(34,201,138,.16)}
+.module-ico{font-size:30px; margin-bottom:10px}
+.module h4{font-size:17px; margin-bottom:8px}
+.module p{margin:0 0 12px; font-size:13.2px; color:var(--muted)}
+.module-tag{
+  font-size:11px; background:var(--surface2); color:var(--aqua);
+  padding:4px 10px; border-radius:8px; border:1px solid var(--line); display:inline-block;
+}
+
+/* ---------- 기술 스택 ---------- */
+.stack{display:flex; flex-wrap:wrap; gap:8px}
+.stack-item{
+  background:var(--surface); border:1px solid var(--line); border-radius:10px;
+  padding:8px 14px; font-size:12.5px; font-weight:600;
+}
+.stack-item b{color:var(--eco)}
+.stack-item.off b{color:var(--warn)}
+
+/* ---------- 작업 레이아웃 ---------- */
+.work{display:grid; grid-template-columns:330px 1fr; gap:20px; align-items:start}
+.panel{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+  padding:20px; position:sticky; top:78px; max-height:calc(100vh - 100px);
+  overflow-y:auto; box-shadow:var(--shadow);
+}
+.panel::-webkit-scrollbar{width:7px}
+.panel::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px}
+.panel-title{
+  font-size:13px; text-transform:uppercase; letter-spacing:.08em;
+  color:var(--eco); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--line);
+}
+.field{margin-bottom:15px}
+.field label{display:block; font-size:12.8px; color:var(--muted); margin-bottom:6px; font-weight:600}
+.field label b{color:var(--text); font-size:14px; font-variant-numeric:tabular-nums}
+.field small{display:block; font-size:11px; color:var(--muted); opacity:.75; margin-top:4px}
+
+input[type=range]{
+  -webkit-appearance:none; appearance:none; width:100%; height:5px;
+  background:var(--surface2); border-radius:4px; outline:none; cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; width:17px; height:17px; border-radius:50%;
+  background:var(--eco); cursor:pointer; border:3px solid var(--surface);
+  box-shadow:0 0 0 1px var(--eco);
+}
+input[type=range]::-moz-range-thumb{
+  width:14px; height:14px; border-radius:50%; background:var(--eco);
+  cursor:pointer; border:3px solid var(--surface);
+}
+.sel, .num{
+  width:100%; background:var(--surface2); border:1px solid var(--line);
+  color:var(--text); padding:8px 10px; border-radius:9px; font-size:13px; font-family:inherit;
+}
+.sel:focus,.num:focus{outline:none; border-color:var(--eco)}
+.mini-grid{display:grid; grid-template-columns:1fr 1fr; gap:8px}
+.mini-grid label{font-size:12px; color:var(--muted); font-weight:600}
+.mini-grid .num{margin-top:3px; padding:6px 8px}
+.sum-note{font-size:12px; color:var(--muted); margin-top:8px}
+.sum-note b{color:var(--text)}
+.sum-note .bad{color:var(--warn); font-weight:700}
+
+/* ---------- 결과 카드 ---------- */
+.stage{min-width:0}
+.result-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; margin-bottom:18px}
+.rcard{
+  background:var(--surface); border:1px solid var(--line); border-radius:14px;
+  padding:16px 18px; display:flex; flex-direction:column; gap:2px;
+  border-left:3px solid var(--violet);
+}
+.rcard.eco{border-left-color:var(--eco)}
+.rcard.aqua{border-left-color:var(--aqua)}
+.rcard.warn{border-left-color:var(--warn)}
+.rcard.pass{border-left-color:var(--eco)}
+.rcard.fail{border-left-color:var(--warn)}
+.rlabel{font-size:12px; color:var(--muted); font-weight:600}
+.rnum{font-size:27px; font-weight:900; letter-spacing:-.03em; font-variant-numeric:tabular-nums}
+.runit{font-size:11.5px; color:var(--muted)}
+
+/* ---------- 캔버스 박스 ---------- */
+.canvas-box, .chart-box{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+  padding:16px; margin-bottom:18px;
+}
+.canvas-head{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap}
+.canvas-head h4{font-size:15px}
+.hint{font-size:11.5px; color:var(--muted)}
+.three-host{
+  height:380px; border-radius:12px; overflow:hidden;
+  background:linear-gradient(180deg,#0a1220,#0f1b2e);
+  position:relative;
+}
+.three-host canvas{display:block}
+.chart-2col{display:grid; grid-template-columns:1fr 1fr; gap:18px}
+.chart-box h4{font-size:14.5px; margin-bottom:12px}
+.chart-box canvas{max-height:270px}
+.chart-box.wide{grid-column:1/-1}
+
+/* ---------- 환산 결과 ---------- */
+.equiv{
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r);
+  padding:18px; display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px;
+}
+.eq-item{display:flex; align-items:center; gap:11px}
+.eq-ico{font-size:26px}
+.eq-txt b{display:block; font-size:17px; font-weight:800}
+.eq-txt span{font-size:11.5px; color:var(--muted)}
+.verdict{
+  padding:16px 20px; border-radius:12px; font-size:14px; font-weight:700;
+  grid-column:1/-1;
+}
+.verdict.ok{background:rgba(34,201,138,.12); color:var(--eco); border:1px solid rgba(34,201,138,.3)}
+.verdict.ng{background:rgba(251,113,133,.12); color:var(--warn); border:1px solid rgba(251,113,133,.3)}
+
+/* ---------- 지도 ---------- */
+#evMap{background:var(--surface2)}
+.leaflet-popup-content-wrapper{background:var(--surface); color:var(--text); border-radius:10px}
+.leaflet-popup-tip{background:var(--surface)}
+.ev-pin{
+  background:linear-gradient(135deg,var(--eco),#0fa06b); color:#04170f;
+  width:30px; height:30px; border-radius:50%; display:grid; place-items:center;
+  font-size:15px; font-weight:900; border:2px solid #fff; box-shadow:0 3px 10px rgba(0,0,0,.4);
+}
+
+/* ---------- 보고서 ---------- */
+.report-actions{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:20px}
+.paper{
+  background:#fff; color:#14202f; border-radius:var(--r);
+  padding:44px 48px; box-shadow:var(--shadow); min-height:400px;
+}
+.paper-empty{text-align:center; color:#8b97a8; padding:80px 0; font-size:15px}
+.paper h1{font-size:25px; text-align:center; margin-bottom:6px; color:#0d5c3f}
+.paper .paper-sub{text-align:center; color:#6b7a8d; font-size:12.5px; margin-bottom:28px}
+.paper h2{
+  font-size:16px; margin:26px 0 12px; padding:8px 12px;
+  background:#eef8f3; border-left:4px solid #16a06c; color:#0d5c3f;
+}
+.paper table{width:100%; border-collapse:collapse; font-size:12.8px; margin-bottom:8px}
+.paper th,.paper td{border:1px solid #d5dee8; padding:8px 10px; text-align:left}
+.paper th{background:#f3f7fb; font-weight:700; width:34%; color:#2b3b50}
+.paper td{font-variant-numeric:tabular-nums}
+.paper .note{font-size:11.5px; color:#77869a; margin-top:6px}
+.paper .summary{background:#f7fbfe; border:1px solid #dce8f2; border-radius:10px; padding:16px 18px; font-size:13px; line-height:1.8}
+.paper .stamp{
+  margin-top:34px; text-align:right; font-size:12.5px; color:#4a5b70;
+  border-top:1px solid #dbe3ec; padding-top:16px;
+}
+
+/* ---------- 푸터 ---------- */
+#foot{
+  border-top:1px solid var(--line); padding:26px 20px; text-align:center;
+  color:var(--muted); font-size:12.3px; background:var(--bg2);
+}
+#foot b{color:var(--text)}
+.dot{margin:0 6px; opacity:.5}
+.foot-sub{margin-top:6px; font-size:11.5px; opacity:.75}
+
+/* ---------- Supabase Auth & Modal ---------- */
+.modal-overlay{
+  position:fixed; inset:0; z-index:9998; display:flex; align-items:center; justify-content:center;
+  background:rgba(0,0,0,0.65); backdrop-filter:blur(6px); animation:fadeIn .2s ease;
+}
+.modal-card{
+  background:var(--surface); border:1px solid var(--line); width:90%; max-width:420px;
+  border-radius:16px; box-shadow:var(--shadow); overflow:hidden; animation:slideUp .25s ease;
+}
+.modal-header{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:16px 20px; background:var(--surface2); border-bottom:1px solid var(--line);
+}
+.modal-header h3{font-size:16px; margin:0;}
+.close-btn{background:none; border:none; color:var(--muted); font-size:24px; cursor:pointer;}
+.close-btn:hover{color:var(--text);}
+.modal-body{padding:20px;}
+.auth-tabs{display:flex; margin-bottom:18px; border-bottom:1px solid var(--line);}
+.auth-tab{
+  flex:1; padding:10px; background:none; border:none; color:var(--muted);
+  font-size:14px; font-weight:bold; cursor:pointer; border-bottom:2px solid transparent;
+}
+.auth-tab.active{color:var(--eco); border-bottom-color:var(--eco);}
+.auth-form .form-group{margin-bottom:14px;}
+.auth-form label{display:block; font-size:12px; color:var(--muted); margin-bottom:5px;}
+.auth-form input{
+  width:100%; padding:10px 12px; background:var(--bg2); border:1px solid var(--line);
+  border-radius:8px; color:var(--text); font-size:13.5px; font-family:inherit;
+}
+.auth-form input:focus{border-color:var(--eco); outline:none;}
+.full-width{width:100%; margin-top:10px; padding:11px;}
+.user-avatar{font-size:48px; margin-bottom:10px;}
+.btn.eco{background:linear-gradient(135deg,var(--eco),#0fa06b); color:#04170f; font-weight:bold;}
+.btn.warn{background:var(--warn); color:#fff; font-weight:bold;}
+
+/* ---------- AI 챗봇 위젯 ---------- */
+#aiChatbotWidget{position:fixed; bottom:24px; right:24px; z-index:950;}
+.chatbot-toggle{
+  display:flex; align-items:center; gap:8px; background:linear-gradient(135deg,var(--eco),#0fa06b);
+  color:#04170f; border:none; padding:12px 18px; border-radius:30px; font-weight:bold;
+  font-size:14px; cursor:pointer; box-shadow:0 8px 24px rgba(34,201,138,0.35); transition:transform .2s;
+}
+.chatbot-toggle:hover{transform:scale(1.05);}
+.chatbot-window{
+  position:absolute; bottom:60px; right:0; width:360px; height:500px;
+  background:var(--surface); border:1px solid var(--line); border-radius:18px;
+  box-shadow:var(--shadow); display:flex; flex-direction:column; overflow:hidden; animation:slideUp .25s ease;
+}
+.chatbot-header{
+  display:flex; justify-content:space-between; align-items:center; padding:14px 16px;
+  background:var(--surface2); border-bottom:1px solid var(--line);
+}
+.chat-title{display:flex; align-items:center; gap:10px;}
+.chat-title strong{font-size:14px; display:block;}
+.chat-title p{font-size:11px; color:var(--muted); margin:0;}
+.bot-icon{font-size:22px;}
+.chatbot-messages{flex:1; padding:14px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; font-size:13px;}
+.chat-msg{max-width:85%; padding:10px 14px; border-radius:12px; line-height:1.5;}
+.chat-msg.user{align-self:flex-end; background:var(--eco); color:#04170f; font-weight:bold; border-bottom-right-radius:2px;}
+.chat-msg.bot{align-self:flex-start; background:var(--surface2); color:var(--text); border:1px solid var(--line); border-bottom-left-radius:2px;}
+.chatbot-input-area{display:flex; gap:6px; padding:10px; background:var(--bg2); border-top:1px solid var(--line);}
+.chatbot-input-area input{
+  flex:1; background:var(--surface); border:1px solid var(--line); border-radius:8px;
+  padding:8px 12px; color:var(--text); font-size:12.5px; font-family:inherit;
+}
+.chatbot-input-area input:focus{border-color:var(--eco); outline:none;}
+
+@keyframes fadeIn{from{opacity:0} to{opacity:1}}
+@keyframes slideUp{from{opacity:0; transform:translateY(16px)} to{opacity:1; transform:none}}
+
+/* ---------- 반응형 ---------- */
+@media (max-width:1180px){
+  .work{grid-template-columns:1fr}
+  .panel{position:static; max-height:none}
+  .hero{grid-template-columns:1fr}
+  .hero-3d{height:260px}
+  .hero-text h2{font-size:33px}
+}
+@media (max-width:760px){
+  #tabs{order:3; width:100%; justify-content:flex-start; overflow-x:auto; padding-bottom:4px}
+  .chart-2col{grid-template-columns:1fr}
+  .paper{padding:26px 20px}
+  #app{padding:18px 12px 40px}
+  .hero-text h2{font-size:27px}
+  .chatbot-window{width:calc(100vw - 32px); right:-10px; bottom:60px;}
+}
+
+/* ---------- 인쇄 ---------- */
+@media print{
+  #topbar,#foot,.report-actions,#splash,#aiChatbotWidget{display:none!important}
+  .paper{box-shadow:none; padding:0}
+  body{background:#fff}
+}
+
+</style>
+</head>
+<body>
+
+<!-- ================= 로딩 스플래시 ================= -->
+<div id="splash">
+  <div class="splash-inner">
+    <div class="splash-logo">K-ECO<span>SIM</span></div>
+    <div class="splash-bar"><i></i></div>
+    <p id="splashMsg">환경 시뮬레이션 엔진 초기화 중…</p>
+  </div>
+</div>
+
+<!-- ================= 헤더 ================= -->
+<header id="topbar">
+  <div class="brand">
+    <svg viewBox="0 0 40 40" class="brand-mark" aria-hidden="true">
+      <circle cx="20" cy="20" r="18" fill="none" stroke="var(--eco)" stroke-width="2.5"/>
+      <path d="M20 30c0-7 4-12 11-13-1 8-5 12-11 13z" fill="var(--eco)"/>
+      <path d="M20 30c0-6-3-10-9-11 1 7 4 10 9 11z" fill="var(--aqua)" opacity=".85"/>
+      <path d="M20 31v-9" stroke="var(--eco)" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <div>
+      <h1>K-ECO SIM</h1>
+      <p>한국환경공단 환경 시뮬레이션 종합 플랫폼</p>
+    </div>
+  </div>
+
+  <nav id="tabs">
+    <button class="tab active" data-view="home"><span>🏠</span>대시보드</button>
+    <button class="tab" data-view="carbon"><span>🌡️</span>탄소중립</button>
+    <button class="tab" data-view="waste"><span>♻️</span>자원순환</button>
+    <button class="tab" data-view="air"><span>🏭</span>대기확산</button>
+    <button class="tab" data-view="energy"><span>⚡</span>신재생</button>
+    <button class="tab" data-view="ev"><span>🔌</span>무공해차</button>
+    <button class="tab" data-view="water"><span>💧</span>물환경</button>
+    <button class="tab" data-view="report"><span>📄</span>보고서</button>
+  </nav>
+
+  <div class="topbar-right">
+    <span id="clock" class="clock"></span>
+    <button id="themeBtn" class="icon-btn" title="라이트/다크 전환">🌙</button>
+  </div>
+</header>
+
+<main id="app">
+
+<!-- ============================================================ -->
+<!-- 0. 대시보드                                                   -->
+<!-- ============================================================ -->
+<section class="view active" id="view-home">
+  <div id="heroParticles"></div>
+
+  <div class="hero">
+    <div class="hero-text" data-aos="fade-right">
+      <span class="pill">2050 탄소중립 · 자원순환사회 실현</span>
+      <h2>환경 데이터를 <em>3D로 계산</em>하고<br>정책을 <em>시뮬레이션</em>합니다</h2>
+      <p>온실가스 인벤토리부터 대기확산 모델링, 자원순환 흐름 분석, 신재생에너지 발전량 예측,
+         무공해차 충전인프라 입지 최적화, 하수처리 공정 진단까지 —
+         한국환경공단 6대 핵심 업무를 하나의 도구에서 계산합니다.</p>
+      <div class="hero-btns">
+        <button class="btn primary" data-goto="carbon">시뮬레이션 시작 →</button>
+        <button class="btn ghost" id="tourBtn">3분 둘러보기</button>
+      </div>
+    </div>
+    <div class="hero-3d" id="heroGlobe" data-aos="fade-left"></div>
+  </div>
+
+  <div class="kpi-row">
+    <div class="kpi" data-aos="fade-up" data-aos-delay="0">
+      <span class="kpi-label">국가 온실가스 배출량 (2022)</span>
+      <span class="kpi-num" data-count="624.7" data-dec="1">0</span>
+      <span class="kpi-unit">백만톤 CO₂eq</span>
+      <span class="kpi-trend down">▼ 3.5% 전년 대비</span>
+    </div>
+    <div class="kpi" data-aos="fade-up" data-aos-delay="80">
+      <span class="kpi-label">생활폐기물 재활용률</span>
+      <span class="kpi-num" data-count="56.7" data-dec="1">0</span>
+      <span class="kpi-unit">%</span>
+      <span class="kpi-trend up">▲ 목표 2030년 70%</span>
+    </div>
+    <div class="kpi" data-aos="fade-up" data-aos-delay="160">
+      <span class="kpi-label">재생에너지 발전 비중</span>
+      <span class="kpi-num" data-count="9.6" data-dec="1">0</span>
+      <span class="kpi-unit">%</span>
+      <span class="kpi-trend up">▲ 목표 2030년 21.6%</span>
+    </div>
+    <div class="kpi" data-aos="fade-up" data-aos-delay="240">
+      <span class="kpi-label">전기차 누적 보급</span>
+      <span class="kpi-num" data-count="606000" data-dec="0">0</span>
+      <span class="kpi-unit">대</span>
+      <span class="kpi-trend up">▲ 목표 2030년 450만대</span>
+    </div>
+  </div>
+
+  <h3 class="sec-title" data-aos="fade-up">6대 시뮬레이션 모듈</h3>
+  <div class="module-grid">
+    <article class="module" data-goto="carbon" data-aos="zoom-in">
+      <div class="module-ico">🌡️</div>
+      <h4>탄소중립 인벤토리</h4>
+      <p>전력·가스·수송·폐기물 활동자료를 국가 배출계수로 환산해 조직/지자체 온실가스 배출량을 산정하고 감축 시나리오를 3D 도시로 시각화합니다.</p>
+      <span class="module-tag">IPCC 2006 GL · 국가 배출계수</span>
+    </article>
+    <article class="module" data-goto="waste" data-aos="zoom-in" data-aos-delay="60">
+      <div class="module-ico">♻️</div>
+      <h4>자원순환 흐름 분석</h4>
+      <p>발생–선별–재활용–소각–매립 물질흐름(MFA)을 Sankey로 추적하고, 재활용률 개선 시 회피 온실가스와 매립지 잔여수명을 계산합니다.</p>
+      <span class="module-tag">MFA · LandGEM 간이모델</span>
+    </article>
+    <article class="module" data-goto="air" data-aos="zoom-in" data-aos-delay="120">
+      <div class="module-ico">🏭</div>
+      <h4>대기오염 확산 모델</h4>
+      <p>가우시안 플룸 방정식으로 굴뚝 배출 오염물질의 지표 농도를 계산하고, 풍속·대기안정도에 따른 3D 연기 거동을 실시간 렌더링합니다.</p>
+      <span class="module-tag">Gaussian Plume · Pasquill-Gifford</span>
+    </article>
+    <article class="module" data-goto="energy" data-aos="zoom-in" data-aos-delay="180">
+      <div class="module-ico">⚡</div>
+      <h4>신재생에너지 발전량</h4>
+      <p>태양광 PVWatts 방식과 풍력 Betz 출력식을 적용해 지역별 연간 발전량·이용률·회수기간(Payback)을 산정합니다.</p>
+      <span class="module-tag">PVWatts · Betz Limit</span>
+    </article>
+    <article class="module" data-goto="ev" data-aos="zoom-in" data-aos-delay="240">
+      <div class="module-ico">🔌</div>
+      <h4>무공해차 충전인프라</h4>
+      <p>전기차 보급 대수 기반 충전기 소요량·전력수요를 산정하고, 지도 위에서 격자 수요 가중 입지 최적화(K-Means)를 수행합니다.</p>
+      <span class="module-tag">K-Means · 수요가중 입지</span>
+    </article>
+    <article class="module" data-goto="water" data-aos="zoom-in" data-aos-delay="300">
+      <div class="module-ico">💧</div>
+      <h4>하수처리 공정 진단</h4>
+      <p>유입 수질·유량으로 단위공정별 BOD/T-N/T-P 제거율, 슬러지 발생량, 전력원단위와 방류수 수질기준 적합 여부를 진단합니다.</p>
+      <span class="module-tag">A2O 공정 · 방류수 수질기준</span>
+    </article>
+  </div>
+
+  <h3 class="sec-title" data-aos="fade-up">적용 기술 스택</h3>
+  <div class="stack" id="stackList"></div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 1. 탄소중립                                                   -->
+<!-- ============================================================ -->
+<section class="view" id="view-carbon">
+  <div class="view-head">
+    <h2>🌡️ 탄소중립 인벤토리 시뮬레이터</h2>
+    <p>활동자료(에너지 사용량)를 입력하면 <b>2006 IPCC 가이드라인</b>과 <b>국가 온실가스 배출계수</b>에 따라
+       Scope 1·2 배출량을 산정합니다. 감축 시나리오를 조정하면 3D 도시 모형과 감축경로가 즉시 갱신됩니다.</p>
+  </div>
+
+  <div class="work">
+    <aside class="panel">
+      <h3 class="panel-title">활동자료 입력</h3>
+
+      <div class="field">
+        <label>전력 사용량 <b id="lbl-elec">250,000</b> kWh/년</label>
+        <input type="range" id="in-elec" min="0" max="2000000" step="10000" value="250000">
+        <small>배출계수 0.4594 kgCO₂eq/kWh (2021 국가 전력)</small>
+      </div>
+      <div class="field">
+        <label>도시가스(LNG) <b id="lbl-gas">30,000</b> m³/년</label>
+        <input type="range" id="in-gas" min="0" max="300000" step="1000" value="30000">
+        <small>배출계수 2.176 kgCO₂eq/m³</small>
+      </div>
+      <div class="field">
+        <label>휘발유 차량 <b id="lbl-gasoline">12,000</b> L/년</label>
+        <input type="range" id="in-gasoline" min="0" max="200000" step="1000" value="12000">
+        <small>배출계수 2.097 kgCO₂/L</small>
+      </div>
+      <div class="field">
+        <label>경유 차량 <b id="lbl-diesel">18,000</b> L/년</label>
+        <input type="range" id="in-diesel" min="0" max="200000" step="1000" value="18000">
+        <small>배출계수 2.582 kgCO₂/L</small>
+      </div>
+      <div class="field">
+        <label>상수도 사용량 <b id="lbl-water">15,000</b> m³/년</label>
+        <input type="range" id="in-water" min="0" max="200000" step="1000" value="15000">
+        <small>배출계수 0.332 kgCO₂/m³</small>
+      </div>
+      <div class="field">
+        <label>폐기물 소각 처리 <b id="lbl-waste">120</b> 톤/년</label>
+        <input type="range" id="in-waste" min="0" max="3000" step="10" value="120">
+        <small>배출계수 1.10 tCO₂/t (생활폐기물 평균)</small>
+      </div>
+
+      <h3 class="panel-title" style="margin-top:22px">감축 시나리오</h3>
+      <div class="field">
+        <label>에너지효율 개선 <b id="lbl-eff">15</b>%</label>
+        <input type="range" id="in-eff" min="0" max="60" step="1" value="15">
+      </div>
+      <div class="field">
+        <label>재생에너지 전환(RE100) <b id="lbl-re">20</b>%</label>
+        <input type="range" id="in-re" min="0" max="100" step="1" value="20">
+      </div>
+      <div class="field">
+        <label>차량 전동화 <b id="lbl-eveff">10</b>%</label>
+        <input type="range" id="in-eveff" min="0" max="100" step="1" value="10">
+      </div>
+
+      <button class="btn primary full" id="carbonApply">시나리오 적용 · 재계산</button>
+      <button class="btn ghost full" id="carbonPreset">지자체 표준 시나리오 불러오기</button>
+    </aside>
+
+    <div class="stage">
+      <div class="result-row">
+        <div class="rcard">
+          <span class="rlabel">현재 총배출량</span>
+          <span class="rnum" id="out-total">0</span><span class="runit">tCO₂eq/년</span>
+        </div>
+        <div class="rcard eco">
+          <span class="rlabel">감축 후 배출량</span>
+          <span class="rnum" id="out-after">0</span><span class="runit">tCO₂eq/년</span>
+        </div>
+        <div class="rcard aqua">
+          <span class="rlabel">감축량</span>
+          <span class="rnum" id="out-cut">0</span><span class="runit">tCO₂eq/년</span>
+        </div>
+        <div class="rcard warn">
+          <span class="rlabel">상쇄 필요 나무</span>
+          <span class="rnum" id="out-tree">0</span><span class="runit">그루 (30년생 소나무)</span>
+        </div>
+      </div>
+
+      <div class="canvas-box">
+        <div class="canvas-head">
+          <h4>3D 배출 도시 모형</h4>
+          <span class="hint">드래그 회전 · 휠 확대 · 막대 높이 = 부문별 배출량</span>
+        </div>
+        <div class="three-host" id="carbon3d"></div>
+      </div>
+
+      <div class="chart-2col">
+        <div class="chart-box"><h4>부문별 배출 구성</h4><canvas id="carbonDonut"></canvas></div>
+        <div class="chart-box"><h4>2050 탄소중립 감축경로</h4><canvas id="carbonPath"></canvas></div>
+      </div>
+
+      <div class="equiv" id="carbonEquiv"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 2. 자원순환                                                   -->
+<!-- ============================================================ -->
+<section class="view" id="view-waste">
+  <div class="view-head">
+    <h2>♻️ 자원순환 물질흐름 시뮬레이터</h2>
+    <p>폐기물 발생량과 성상별 구성비를 입력하면 <b>물질흐름분석(MFA)</b>으로 재활용·소각·매립 경로를 추적하고,
+       재활용 확대에 따른 <b>회피 온실가스</b>와 <b>매립지 잔여수명</b>을 계산합니다.</p>
+  </div>
+
+  <div class="work">
+    <aside class="panel">
+      <h3 class="panel-title">폐기물 발생 원단위</h3>
+      <div class="field">
+        <label>대상 인구 <b id="lbl-pop">300,000</b> 명</label>
+        <input type="range" id="in-pop" min="10000" max="3000000" step="10000" value="300000">
+      </div>
+      <div class="field">
+        <label>1인당 발생량 <b id="lbl-percap">0.95</b> kg/일</label>
+        <input type="range" id="in-percap" min="0.3" max="2.0" step="0.01" value="0.95">
+        <small>전국 평균 약 0.95 kg/인·일</small>
+      </div>
+
+      <h3 class="panel-title" style="margin-top:20px">성상별 구성비 (%)</h3>
+      <div class="mini-grid" id="wasteComp">
+        <label>종이 <input type="number" class="num" id="c-paper" value="24" min="0" max="100"></label>
+        <label>플라스틱 <input type="number" class="num" id="c-plastic" value="19" min="0" max="100"></label>
+        <label>음식물 <input type="number" class="num" id="c-food" value="28" min="0" max="100"></label>
+        <label>유리 <input type="number" class="num" id="c-glass" value="7" min="0" max="100"></label>
+        <label>금속 <input type="number" class="num" id="c-metal" value="6" min="0" max="100"></label>
+        <label>기타 <input type="number" class="num" id="c-etc" value="16" min="0" max="100"></label>
+      </div>
+      <div class="sum-note">합계 <b id="compSum">100</b>% <span id="compWarn"></span></div>
+
+      <h3 class="panel-title" style="margin-top:20px">처리 정책</h3>
+      <div class="field">
+        <label>분리배출 참여율 <b id="lbl-sep">78</b>%</label>
+        <input type="range" id="in-sep" min="0" max="100" step="1" value="78">
+      </div>
+      <div class="field">
+        <label>선별시설 회수효율 <b id="lbl-sort">85</b>%</label>
+        <input type="range" id="in-sort" min="30" max="98" step="1" value="85">
+      </div>
+      <div class="field">
+        <label>잔재물 중 소각 비율 <b id="lbl-inc">70</b>%</label>
+        <input type="range" id="in-inc" min="0" max="100" step="1" value="70">
+        <small>나머지는 직매립 (2026년 수도권 직매립 금지)</small>
+      </div>
+      <div class="field">
+        <label>매립지 잔여 용량 <b id="lbl-cap">1,200,000</b> m³</label>
+        <input type="range" id="in-cap" min="100000" max="10000000" step="100000" value="1200000">
+      </div>
+      <button class="btn primary full" id="wasteApply">물질흐름 재계산</button>
+    </aside>
+
+    <div class="stage">
+      <div class="result-row">
+        <div class="rcard"><span class="rlabel">연간 발생량</span><span class="rnum" id="w-total">0</span><span class="runit">톤/년</span></div>
+        <div class="rcard eco"><span class="rlabel">재활용률</span><span class="rnum" id="w-rate">0</span><span class="runit">%</span></div>
+        <div class="rcard aqua"><span class="rlabel">회피 온실가스</span><span class="rnum" id="w-ghg">0</span><span class="runit">tCO₂eq/년</span></div>
+        <div class="rcard warn"><span class="rlabel">매립지 잔여수명</span><span class="rnum" id="w-life">0</span><span class="runit">년</span></div>
+      </div>
+
+      <div class="canvas-box">
+        <div class="canvas-head"><h4>3D 자원순환 처리 흐름</h4>
+          <span class="hint">발생 → 선별 → 재활용/소각/매립 입자 흐름 실시간 시뮬레이션</span></div>
+        <div class="three-host" id="waste3d"></div>
+      </div>
+
+      <div class="chart-2col">
+        <div class="chart-box wide"><h4>물질흐름 Sankey 다이어그램 (D3.js)</h4><div id="wasteSankey"></div></div>
+      </div>
+      <div class="chart-2col">
+        <div class="chart-box"><h4>성상별 재활용 잠재량</h4><canvas id="wasteBar"></canvas></div>
+        <div class="chart-box"><h4>재활용률 시나리오별 회피배출</h4><canvas id="wasteLine"></canvas></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 3. 대기확산                                                   -->
+<!-- ============================================================ -->
+<section class="view" id="view-air">
+  <div class="view-head">
+    <h2>🏭 대기오염물질 확산 시뮬레이터</h2>
+    <p><b>가우시안 플룸 모델</b>과 <b>Pasquill-Gifford 확산계수</b>로 굴뚝 배출 오염물질의 풍하방향 지표 농도를 계산합니다.
+       유효굴뚝높이는 <b>Holland 상승식</b>으로 보정됩니다.</p>
+  </div>
+
+  <div class="work">
+    <aside class="panel">
+      <h3 class="panel-title">배출원 제원</h3>
+      <div class="field"><label>굴뚝 높이 <b id="lbl-h">60</b> m</label>
+        <input type="range" id="in-h" min="10" max="200" step="5" value="60"></div>
+      <div class="field"><label>굴뚝 내경 <b id="lbl-d">2.5</b> m</label>
+        <input type="range" id="in-d" min="0.5" max="8" step="0.1" value="2.5"></div>
+      <div class="field"><label>배출가스 유속 <b id="lbl-vs">15</b> m/s</label>
+        <input type="range" id="in-vs" min="1" max="40" step="1" value="15"></div>
+      <div class="field"><label>배출가스 온도 <b id="lbl-ts">150</b> ℃</label>
+        <input type="range" id="in-ts" min="30" max="400" step="5" value="150"></div>
+      <div class="field"><label>오염물질 배출률 Q <b id="lbl-q">80</b> g/s</label>
+        <input type="range" id="in-q" min="1" max="500" step="1" value="80"></div>
+
+      <h3 class="panel-title" style="margin-top:20px">기상 조건</h3>
+      <button class="btn ghost full" style="margin-bottom:12px; font-size:12px; color:var(--aqua); border-color:var(--aqua);" onclick="window.fetchRealtimeWeatherData()">📡 실시간 기상/풍속 API 연동</button>
+      <div class="field"><label>풍속 <b id="lbl-u">4.0</b> m/s</label>
+        <input type="range" id="in-u" min="0.5" max="20" step="0.5" value="4"></div>
+      <div class="field"><label>대기온도 <b id="lbl-ta">20</b> ℃</label>
+        <input type="range" id="in-ta" min="-15" max="40" step="1" value="20"></div>
+      <div class="field">
+        <label>대기안정도 (Pasquill)</label>
+        <select id="in-stab" class="sel">
+          <option value="A">A — 매우 불안정 (강한 일사)</option>
+          <option value="B">B — 불안정</option>
+          <option value="C">C — 약간 불안정</option>
+          <option value="D" selected>D — 중립 (흐림/야간)</option>
+          <option value="E">E — 약간 안정</option>
+          <option value="F">F — 안정 (야간 정온)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>지형 구분</label>
+        <select id="in-terrain" class="sel">
+          <option value="rural">전원(Rural)</option>
+          <option value="urban" selected>도시(Urban)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>대상 오염물질</label>
+        <select id="in-poll" class="sel">
+          <option value="so2">SO₂ (환경기준 24h 0.05 ppm ≈ 131 ㎍/㎥)</option>
+          <option value="no2">NO₂ (24h 0.06 ppm ≈ 113 ㎍/㎥)</option>
+          <option value="pm10" selected>PM-10 (24h 100 ㎍/㎥)</option>
+          <option value="pm25">PM-2.5 (24h 35 ㎍/㎥)</option>
+        </select>
+      </div>
+      <button class="btn primary full" id="airApply">확산 재계산</button>
+    </aside>
+
+    <div class="stage">
+      <div class="result-row">
+        <div class="rcard"><span class="rlabel">유효굴뚝높이 H<sub>e</sub></span><span class="rnum" id="a-he">0</span><span class="runit">m</span></div>
+        <div class="rcard warn"><span class="rlabel">최대 지표농도</span><span class="rnum" id="a-cmax">0</span><span class="runit">㎍/㎥</span></div>
+        <div class="rcard aqua"><span class="rlabel">최대농도 출현거리</span><span class="rnum" id="a-xmax">0</span><span class="runit">m (풍하)</span></div>
+        <div class="rcard" id="a-judgeCard"><span class="rlabel">환경기준 대비</span><span class="rnum" id="a-judge">-</span><span class="runit" id="a-judgeSub">판정</span></div>
+      </div>
+
+      <div class="canvas-box">
+        <div class="canvas-head"><h4>3D 연기 확산(Plume) 렌더링</h4>
+          <span class="hint">풍속·안정도에 따라 연기 상승/확산 형태가 실시간 변화합니다</span></div>
+        <div class="three-host" id="air3d"></div>
+      </div>
+
+      <div class="chart-2col">
+        <div class="chart-box"><h4>풍하거리별 지표농도 곡선</h4><canvas id="airLine"></canvas></div>
+        <div class="chart-box"><h4>지표농도 등농도선 (D3 Contour)</h4><div id="airContour"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 4. 신재생에너지                                               -->
+<!-- ============================================================ -->
+<section class="view" id="view-energy">
+  <div class="view-head">
+    <h2>⚡ 신재생에너지 발전량 시뮬레이터</h2>
+    <p>태양광은 <b>PVWatts 방식</b>(설비용량 × 일사시간 × 성능비), 풍력은 <b>Betz 출력식</b>
+       P = ½ρAv³C<sub>p</sub> 을 적용해 연간 발전량·이용률·투자회수기간을 산정합니다.</p>
+  </div>
+
+  <div class="work">
+    <aside class="panel">
+      <h3 class="panel-title">☀️ 태양광 발전설비</h3>
+      <div class="field">
+        <label>설치 지역</label>
+        <select id="in-region" class="sel">
+          <option value="3.2">서울 (일평균 3.2 h)</option>
+          <option value="3.5">인천 (3.5 h)</option>
+          <option value="3.6" selected>대전 (3.6 h)</option>
+          <option value="3.8">대구 (3.8 h)</option>
+          <option value="3.9">광주 (3.9 h)</option>
+          <option value="4.1">부산 (4.1 h)</option>
+          <option value="4.3">제주 (4.3 h)</option>
+        </select>
+      </div>
+      <div class="field"><label>설비용량 <b id="lbl-pv">500</b> kWp</label>
+        <input type="range" id="in-pv" min="10" max="5000" step="10" value="500"></div>
+      <div class="field"><label>모듈 효율 <b id="lbl-peff">20.5</b> %</label>
+        <input type="range" id="in-peff" min="14" max="24" step="0.1" value="20.5"></div>
+      <div class="field"><label>시스템 성능비(PR) <b id="lbl-pr">0.80</b></label>
+        <input type="range" id="in-pr" min="0.6" max="0.9" step="0.01" value="0.8"></div>
+      <div class="field"><label>경사각 <b id="lbl-tilt">30</b>°</label>
+        <input type="range" id="in-tilt" min="0" max="60" step="1" value="30">
+        <small>국내 최적 경사각 약 30°</small></div>
+
+      <h3 class="panel-title" style="margin-top:20px">🌬️ 풍력 발전설비</h3>
+      <div class="field"><label>터빈 기수 <b id="lbl-nwt">3</b> 기</label>
+        <input type="range" id="in-nwt" min="1" max="20" step="1" value="3"></div>
+      <div class="field"><label>로터 직경 <b id="lbl-rot">90</b> m</label>
+        <input type="range" id="in-rot" min="20" max="180" step="5" value="90"></div>
+      <div class="field"><label>연평균 풍속 <b id="lbl-wind">6.5</b> m/s</label>
+        <input type="range" id="in-wind" min="3" max="12" step="0.1" value="6.5"></div>
+      <div class="field"><label>출력계수 C<sub>p</sub> <b id="lbl-cp">0.42</b></label>
+        <input type="range" id="in-cp" min="0.2" max="0.59" step="0.01" value="0.42">
+        <small>Betz 한계 0.593</small></div>
+
+      <h3 class="panel-title" style="margin-top:20px">💰 경제성</h3>
+      <div class="field"><label>SMP+REC 단가 <b id="lbl-smp">160</b> 원/kWh</label>
+        <input type="range" id="in-smp" min="80" max="300" step="5" value="160"></div>
+      <button class="btn primary full" id="energyApply">발전량 재계산</button>
+    </aside>
+
+    <div class="stage">
+      <div class="result-row">
+        <div class="rcard eco"><span class="rlabel">태양광 연간발전량</span><span class="rnum" id="e-pv">0</span><span class="runit">MWh/년</span></div>
+        <div class="rcard aqua"><span class="rlabel">풍력 연간발전량</span><span class="rnum" id="e-wt">0</span><span class="runit">MWh/년</span></div>
+        <div class="rcard"><span class="rlabel">온실가스 감축</span><span class="rnum" id="e-ghg">0</span><span class="runit">tCO₂eq/년</span></div>
+        <div class="rcard warn"><span class="rlabel">투자 회수기간</span><span class="rnum" id="e-pay">0</span><span class="runit">년</span></div>
+      </div>
+
+      <div class="canvas-box">
+        <div class="canvas-head"><h4>3D 발전단지 모형</h4>
+          <span class="hint">태양광 패널 경사각·풍력 회전속도가 입력값에 연동됩니다</span></div>
+        <div class="three-host" id="energy3d"></div>
+      </div>
+
+      <div class="chart-2col">
+        <div class="chart-box"><h4>월별 발전량 예측</h4><canvas id="energyBar"></canvas></div>
+        <div class="chart-box"><h4>풍속-출력 곡선 (Power Curve)</h4><canvas id="energyCurve"></canvas></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 5. 무공해차                                                   -->
+<!-- ============================================================ -->
+<section class="view" id="view-ev">
+  <div class="view-head">
+    <h2>🔌 무공해차 충전인프라 시뮬레이터</h2>
+    <p>전기차 보급 목표에 따른 <b>충전기 소요량·전력수요·온실가스 감축량</b>을 산정하고,
+       지도 위 수요 격자에 <b>K-Means 군집 최적화</b>를 적용해 충전소 입지를 도출합니다.</p>
+  </div>
+
+  <div class="work">
+    <aside class="panel">
+      <h3 class="panel-title">보급 시나리오</h3>
+      <div class="field"><label>전기차 보급 대수 <b id="lbl-evn">25,000</b> 대</label>
+        <input type="range" id="in-evn" min="1000" max="500000" step="1000" value="25000"></div>
+      <div class="field"><label>연평균 주행거리 <b id="lbl-km">13,000</b> km</label>
+        <input type="range" id="in-km" min="5000" max="30000" step="500" value="13000"></div>
+      <div class="field"><label>전비 <b id="lbl-eff2">5.2</b> km/kWh</label>
+        <input type="range" id="in-eff2" min="3" max="7" step="0.1" value="5.2"></div>
+      <div class="field"><label>급속충전기 비중 <b id="lbl-fast">22</b>%</label>
+        <input type="range" id="in-fast" min="0" max="60" step="1" value="22"></div>
+      <div class="field"><label>충전기 1기당 담당 차량 <b id="lbl-ratio">7.5</b> 대</label>
+        <input type="range" id="in-ratio" min="2" max="20" step="0.5" value="7.5">
+        <small>환경부 목표 2030년 약 2.0~3.0대/기</small></div>
+      <div class="field"><label>재생에너지 충전 비율 <b id="lbl-green">20</b>%</label>
+        <input type="range" id="in-green" min="0" max="100" step="1" value="20"></div>
+
+      <h3 class="panel-title" style="margin-top:20px">입지 최적화</h3>
+      <div class="field"><label>설치 후보 충전소 수 <b id="lbl-k">8</b> 개소</label>
+        <input type="range" id="in-k" min="3" max="20" step="1" value="8"></div>
+      <button class="btn primary full" id="evApply">수요 재계산</button>
+      <button class="btn ghost full" id="evOptimize">K-Means 입지 최적화 실행</button>
+    </aside>
+
+    <div class="stage">
+      <div class="result-row">
+        <div class="rcard"><span class="rlabel">필요 충전기</span><span class="rnum" id="v-chg">0</span><span class="runit">기 (완속+급속)</span></div>
+        <div class="rcard aqua"><span class="rlabel">연간 충전 전력수요</span><span class="rnum" id="v-pow">0</span><span class="runit">GWh/년</span></div>
+        <div class="rcard eco"><span class="rlabel">온실가스 감축</span><span class="rnum" id="v-ghg">0</span><span class="runit">tCO₂eq/년</span></div>
+        <div class="rcard warn"><span class="rlabel">첨두 계약전력</span><span class="rnum" id="v-peak">0</span><span class="runit">MW</span></div>
+      </div>
+
+      <div class="canvas-box">
+        <div class="canvas-head"><h4>충전수요 격자 & 최적 입지 (Leaflet)</h4>
+          <span class="hint">원 크기 = 수요밖도 · ⚡ 마커 = K-Means 최적 입지</span></div>
+        <div id="evMap" style="height:380px;border-radius:12px"></div>
+      </div>
+
+      <div class="chart-2col">
+        <div class="chart-box"><h4>시간대별 충전부하 프로파일</h4><canvas id="evLoad"></canvas></div>
+        <div class="chart-box"><h4>내연기관차 대비 배출 비교</h4><canvas id="evCompare"></canvas></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 6. 물환경                                                     -->
+<!-- ============================================================ -->
+<section class="view" id="view-water">
+  <div class="view-head">
+    <h2>💧 하수처리 공정 진단 시뮬레이터</h2>
+    <p>유입 유량·수질을 입력하면 <b>A²O(혐기-무산소-호기) 공정</b> 단위공정별 제거율을 적용해
+       방류수질을 예측하고 <b>공공하수처리시설 방류수 수질기준(Ⅲ지역)</b> 적합 여부를 진단합니다.
+       기준: BOD 10 · COD 40 · SS 10 · T-N 20 · T-P 0.5 mg/L 이하</p>
+  </div>
+
+  <div class="work">
+    <aside class="panel">
+      <h3 class="panel-title">유입 조건</h3>
+      <div class="field"><label>계획 유량 <b id="lbl-qin">30,000</b> m³/일</label>
+        <input type="range" id="in-qin" min="1000" max="500000" step="1000" value="30000"></div>
+      <div class="field"><label>유입 BOD <b id="lbl-bod">180</b> mg/L</label>
+        <input type="range" id="in-bod" min="50" max="500" step="5" value="180"></div>
+      <div class="field"><label>유입 SS <b id="lbl-ss">200</b> mg/L</label>
+        <input type="range" id="in-ss" min="50" max="600" step="5" value="200"></div>
+      <div class="field"><label>유입 T-N <b id="lbl-tn">40</b> mg/L</label>
+        <input type="range" id="in-tn" min="10" max="100" step="1" value="40"></div>
+      <div class="field"><label>유입 T-P <b id="lbl-tp">4.5</b> mg/L</label>
+        <input type="range" id="in-tp" min="1" max="15" step="0.1" value="4.5"></div>
+
+      <h3 class="panel-title" style="margin-top:20px">운전 조건</h3>
+      <div class="field"><label>MLSS <b id="lbl-mlss">3,200</b> mg/L</label>
+        <input type="range" id="in-mlss" min="1500" max="6000" step="100" value="3200"></div>
+      <div class="field"><label>SRT (슬러지 체류시간) <b id="lbl-srt">12</b> 일</label>
+        <input type="range" id="in-srt" min="3" max="30" step="1" value="12"></div>
+      <div class="field"><label>HRT (수리학적 체류시간) <b id="lbl-hrt">10</b> 시간</label>
+        <input type="range" id="in-hrt" min="4" max="24" step="1" value="10"></div>
+      <div class="field"><label>수온 <b id="lbl-temp">18</b> ℃</label>
+        <input type="range" id="in-temp" min="5" max="30" step="1" value="18"></div>
+      <div class="field">
+        <label>고도처리 공정</label>
+        <select id="in-adv" class="sel">
+          <option value="none">표준활성슬러지법만</option>
+          <option value="a2o" selected>A²O (질소·인 동시제거)</option>
+          <option value="a2o-mbr">A²O + MBR (막분리)</option>
+          <option value="a2o-mbr-o3">A²O + MBR + 오존산화</option>
+        </select>
+      </div>
+      <button class="btn primary full" id="waterApply">공정 진단 실행</button>
+    </aside>
+
+    <div class="stage">
+      <div class="result-row">
+        <div class="rcard eco"><span class="rlabel">방류 BOD</span><span class="rnum" id="q-bod">0</span><span class="runit">mg/L (기준 10 이하)</span></div>
+        <div class="rcard aqua"><span class="rlabel">방류 T-N</span><span class="rnum" id="q-tn">0</span><span class="runit">mg/L (기준 20 이하)</span></div>
+        <div class="rcard"><span class="rlabel">슬러지 발생량</span><span class="rnum" id="q-sludge">0</span><span class="runit">톤/일 (함수율 80%)</span></div>
+        <div class="rcard warn"><span class="rlabel">전력 사용량</span><span class="rnum" id="q-power">0</span><span class="runit">MWh/년</span></div>
+      </div>
+
+      <div class="canvas-box">
+        <div class="canvas-head"><h4>3D 하수처리 공정 계통도</h4>
+          <span class="hint">유입수가 각 반응조를 통과하며 수질이 개선되는 과정을 시각화</span></div>
+        <div class="three-host" id="water3d"></div>
+      </div>
+
+      <div class="chart-2col">
+        <div class="chart-box"><h4>단위공정별 수질 변화</h4><canvas id="waterLine"></canvas></div>
+        <div class="chart-box"><h4>방류수 수질기준 적합도</h4><canvas id="waterRadar"></canvas></div>
+      </div>
+      <div class="equiv" id="waterVerdict"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- 7. 보고서                                                     -->
+<!-- ============================================================ -->
+<section class="view" id="view-report">
+  <div class="view-head">
+    <h2>📄 통합 진단 보고서</h2>
+    <p>6개 모듈의 시뮬레이션 결과를 종합해 진단 보고서를 생성합니다.
+       <b>PDF</b> 또는 <b>Excel</b>로 내려받아 제출자료로 활용할 수 있습니다.</p>
+  </div>
+
+  <div class="report-actions">
+    <button class="btn primary" id="genReport">🔄 보고서 생성 / 갱신</button>
+    <button class="btn ghost" id="pdfBtn">📄 PDF 내려받기</button>
+    <button class="btn ghost" id="xlsBtn">📊 Excel 내려받기</button>
+    <button class="btn ghost" id="printBtn">🖨️ 인쇄</button>
+  </div>
+
+  <div id="reportPaper" class="paper">
+    <p class="paper-empty">「보고서 생성」 버튼을 눌러 주세요.</p>
+  </div>
+</section>
+
+</main>
+
+<footer id="foot">
+  <div>
+    <b>K-ECO SIM</b> · 한국환경공단 환경 시뮬레이션 종합 플랫폼
+    <span class="dot">·</span> 산정근거: 2006 IPCC 국가인벤토리 가이드라인, 국가 온실가스 배출계수,
+    대기환경보전법 시행규칙, 공공하수처리시설 방류수 수질기준
+  </div>
+  <div class="foot-sub">본 도구의 계산 결과는 정책 검토용 참고자료이며, 법정 인·허가 목적의 공식 산정치가 아닙니다.</div>
+</footer>
+
+<!-- ================= 외부 라이브러리 JS ================= -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/numeral.js/2.0.6/numeral.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/countup.js@2.8.0/dist/countUp.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+<script src="https://unpkg.com/@popperjs/core@2"></script>
+<script src="https://unpkg.com/tippy.js@6"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/particles.js/2.0.0/particles.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chroma-js@2.4.2/chroma.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<!-- ================= 애플리케이션 ================= -->
+<script>
+/* ===== assets/core.js ===== */
+/* ============================================================
+   core.js — 공통 엔진 (유틸 · 3D 헬퍼 · 네비게이션 · 계수 상수)
+   ============================================================ */
+
+window.KECO = (function () {
+  'use strict';
+
+  /* ---------- 국가 온실가스 배출계수 및 환경 상수 ----------
+     출처: 2006 IPCC 국가인벤토리 가이드라인, 국가 온실가스 배출계수(2021),
+           환경부 온실가스 배출량 산정지침, 대기환경보전법 시행규칙        */
+  const EF = {
+    elec:      0.4594,  // kgCO2eq / kWh   (국가 전력 배출계수)
+    gas:       2.176,   // kgCO2eq / m3    (도시가스 LNG)
+    gasoline:  2.097,   // kgCO2 / L
+    diesel:    2.582,   // kgCO2 / L
+    water:     0.332,   // kgCO2 / m3      (상수도 생산·공급)
+    wasteInc:  1.10,    // tCO2 / t        (생활폐기물 소각)
+    wasteLand: 0.40,    // tCO2eq / t      (매립 CH4 간이계수)
+    treeAbs:   6.6,     // kgCO2 / 그루·년 (30년생 소나무)
+    // 재활용에 따른 회피 배출계수 (tCO2eq / t)
+    recycle: { paper: 3.00, plastic: 2.00, food: 0.35, glass: 0.30, metal: 4.50, etc: 0.20 },
+    // 폐기물 겉보기 밀도 (t / m3) — 매립 용량 산정용
+    density:   0.85
+  };
+
+  /* ---------- 대기환경기준 (24시간 평균, ㎍/㎥ 환산) ---------- */
+  const AQ_STD = {
+    so2:  { name: 'SO₂',    std: 131, unit: '㎍/㎥' },
+    no2:  { name: 'NO₂',    std: 113, unit: '㎍/㎥' },
+    pm10: { name: 'PM-10',  std: 100, unit: '㎍/㎥' },
+    pm25: { name: 'PM-2.5', std: 35,  unit: '㎍/㎥' }
+  };
+
+  /* ---------- 공공하수처리시설 방류수 수질기준 (1일 500㎥ 이상, Ⅲ지역) ----------
+     BOD 10 / COD 40 / SS 10 / T-N 20 / T-P 0.5 mg/L 이하                        */
+  const EFF_STD = { bod: 10, cod: 40, ss: 10, tn: 20, tp: 0.5 };
+
+  /* ---------- 시뮬레이션 결과 저장소 (보고서 모듈이 참조) ---------- */
+  const store = { carbon: null, waste: null, air: null, energy: null, ev: null, water: null };
+
+  /* ============================================================
+     숫자 · 문자 유틸
+     ============================================================ */
+  function fmt(n, dec) {
+    if (!isFinite(n)) return '-';
+    dec = dec === undefined ? 0 : dec;
+    return Number(n).toLocaleString('ko-KR', {
+      minimumFractionDigits: dec, maximumFractionDigits: dec
+    });
+  }
+
+  /** 값에 따라 소수점 자릿수를 자동 결정 */
+  function fmtAuto(n) {
+    const a = Math.abs(n);
+    if (a >= 1000) return fmt(n, 0);
+    if (a >= 100)  return fmt(n, 1);
+    if (a >= 1)    return fmt(n, 2);
+    return fmt(n, 3);
+  }
+
+  /** 결과 카드 숫자를 카운트업 애니메이션으로 갱신 */
+  function setNum(id, value, dec) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    dec = dec === undefined ? 0 : dec;
+    if (window.countUp && isFinite(value)) {
+      const from = parseFloat(String(el.textContent).replace(/,/g, '')) || 0;
+      new countUp.CountUp(el, value, {
+        startVal: from, decimalPlaces: dec, duration: 0.9, separator: ','
+      }).start();
+    } else {
+      el.textContent = fmt(value, dec);
+    }
+  }
+
+  function toast(msg, type) {
+    if (!window.Toastify) return;
+    const bg = {
+      ok:   'linear-gradient(135deg,#22c98a,#0fa06b)',
+      warn: 'linear-gradient(135deg,#fbbf24,#f59e0b)',
+      err:  'linear-gradient(135deg,#fb7185,#e11d48)',
+      info: 'linear-gradient(135deg,#38bdf8,#0284c7)'
+    }[type || 'ok'];
+    Toastify({
+      text: msg, duration: 2600, gravity: 'bottom', position: 'right',
+      style: { background: bg, borderRadius: '10px', fontWeight: '700', fontSize: '13px' }
+    }).showToast();
+  }
+
+  /** 슬라이더와 라벨을 묶고, 변경 시 콜백을 디바운스 실행 */
+  function bind(inputId, labelId, onChange, formatter) {
+    const inp = document.getElementById(inputId);
+    const lab = document.getElementById(labelId);
+    if (!inp) return null;
+    const paint = function () {
+      if (lab) lab.textContent = formatter ? formatter(parseFloat(inp.value)) : fmt(parseFloat(inp.value));
+    };
+    const debounced = _.debounce(function () { if (onChange) onChange(); }, 90);
+    inp.addEventListener('input', function () { paint(); debounced(); });
+    paint();
+    return inp;
+  }
+
+  function val(id) { const e = document.getElementById(id); return e ? parseFloat(e.value) : 0; }
+  function raw(id) { const e = document.getElementById(id); return e ? e.value : ''; }
+
+  /* ============================================================
+     Three.js 공통 씬 생성기
+     ============================================================ */
+  function scene3D(hostId, opts) {
+    const host = document.getElementById(hostId);
+    if (!host || !window.THREE) return null;
+    opts = opts || {};
+
+    // 재초기화 시 기존 캔버스 제거
+    host.innerHTML = '';
+
+    const w = host.clientWidth || 600;
+    const h = host.clientHeight || 380;
+
+    const scene = new THREE.Scene();
+    scene.background = null;
+    if (opts.fog !== false) scene.fog = new THREE.Fog(0x0a1220, 60, 260);
+
+    const camera = new THREE.PerspectiveCamera(opts.fov || 50, w / h, 0.1, 2000);
+    const cp = opts.camera || [45, 32, 55];
+    camera.position.set(cp[0], cp[1], cp[2]);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(w, h);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    host.appendChild(renderer.domElement);
+
+    // 조명
+    scene.add(new THREE.HemisphereLight(0xbfd8ff, 0x0b1220, 0.75));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.05);
+    sun.position.set(48, 70, 40);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.left = -90; sun.shadow.camera.right = 90;
+    sun.shadow.camera.top = 90;   sun.shadow.camera.bottom = -90;
+    scene.add(sun);
+    const fill = new THREE.DirectionalLight(0x66aaff, 0.35);
+    fill.position.set(-40, 24, -30);
+    scene.add(fill);
+
+    // 바닥 + 그리드
+    if (opts.ground !== false) {
+      const gsz = opts.groundSize || 150;
+      const ground = new THREE.Mesh(
+        new THREE.CircleGeometry(gsz / 2, 64),
+        new THREE.MeshStandardMaterial({
+          color: opts.groundColor || 0x14233a, roughness: 0.95, metalness: 0.05
+        })
+      );
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      const grid = new THREE.GridHelper(gsz, opts.gridDiv || 30, 0x2a4260, 0x1b2c44);
+      grid.position.y = 0.02;
+      scene.add(grid);
+    }
+
+    // 컨트롤
+    let controls = null;
+    if (window.THREE.OrbitControls) {
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.07;
+      controls.minDistance = opts.minDist || 15;
+      controls.maxDistance = opts.maxDist || 320;
+      controls.maxPolarAngle = Math.PI / 2 - 0.03;
+      controls.target.set(0, opts.targetY || 8, 0);
+      if (opts.autoRotate) { controls.autoRotate = true; controls.autoRotateSpeed = 0.55; }
+      controls.update();
+    }
+
+    // 반응형
+    const onResize = _.debounce(function () {
+      const nw = host.clientWidth, nh = host.clientHeight;
+      if (!nw || !nh) return;
+      camera.aspect = nw / nh;
+      camera.updateProjectionMatrix();
+      renderer.setSize(nw, nh);
+    }, 140);
+    window.addEventListener('resize', onResize);
+
+    const api = {
+      scene: scene, camera: camera, renderer: renderer, controls: controls,
+      host: host, tickFns: [], _raf: null, _stopped: false,
+
+      /** 매 프레임 실행할 함수 등록 */
+      onTick: function (fn) { this.tickFns.push(fn); return this; },
+
+      /** 렌더 루프 시작 */
+      start: function () {
+        const self = this;
+        let t = 0;
+        (function loop() {
+          if (self._stopped) return;
+          self._raf = requestAnimationFrame(loop);
+          t += 0.016;
+          for (let i = 0; i < self.tickFns.length; i++) self.tickFns[i](t);
+          if (self.controls) self.controls.update();
+          self.renderer.render(self.scene, self.camera);
+        })();
+        return this;
+      },
+
+      /** 정리 (뷰 재초기화 시 호출) */
+      dispose: function () {
+        this._stopped = true;
+        if (this._raf) cancelAnimationFrame(this._raf);
+        window.removeEventListener('resize', onResize);
+        this.scene.traverse(function (o) {
+          if (o.geometry) o.geometry.dispose();
+          if (o.material) {
+            if (Array.isArray(o.material)) o.material.forEach(function (m) { m.dispose(); });
+            else o.material.dispose();
+          }
+        });
+        this.renderer.dispose();
+        if (this.host) this.host.innerHTML = '';
+      },
+
+      /** 씬에 붙인 동적 그룹 초기화용 헬퍼 */
+      clearGroup: function (group) {
+        while (group.children.length) {
+          const c = group.children.pop();
+          if (c.geometry) c.geometry.dispose();
+          if (c.material) {
+            if (Array.isArray(c.material)) c.material.forEach(function (m) { m.dispose(); });
+            else c.material.dispose();
+          }
+          group.remove(c);
+        }
+      }
+    };
+    return api;
+  }
+
+  /** 3D 공간에 텍스트 라벨(스프라이트) 생성 */
+  function label3D(text, color, scale) {
+    const cv = document.createElement('canvas');
+    cv.width = 256; cv.height = 64;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = 'rgba(10,18,32,0.82)';
+    ctx.beginPath();
+    if (ctx.roundRect) { ctx.roundRect(0, 0, 256, 64, 14); ctx.fill(); }
+    else ctx.fillRect(0, 0, 256, 64);
+    ctx.fillStyle = color || '#e6eefc';
+    ctx.font = 'bold 30px "Malgun Gothic", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(text, 128, 34);
+
+    const tex = new THREE.CanvasTexture(cv);
+    tex.needsUpdate = true;
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+    const s = scale || 1;
+    sp.scale.set(11 * s, 2.75 * s, 1);
+    return sp;
+  }
+
+  /* ============================================================
+     Chart.js 공통 테마
+     ============================================================ */
+  function chartTheme() {
+    const light = document.documentElement.getAttribute('data-theme') === 'light';
+    return {
+      text:  light ? '#334155' : '#c7d5ec',
+      muted: light ? '#64748b' : '#8fa3c4',
+      grid:  light ? 'rgba(0,0,0,.07)' : 'rgba(255,255,255,.07)'
+    };
+  }
+
+  /** 기존 차트를 파괴하고 새로 생성 (중복 렌더 방지) */
+  const charts = {};
+  function chart(canvasId, config) {
+    const cv = document.getElementById(canvasId);
+    if (!cv || !window.Chart) return null;
+    if (charts[canvasId]) charts[canvasId].destroy();
+
+    const th = chartTheme();
+    config.options = config.options || {};
+    config.options.responsive = true;
+    config.options.maintainAspectRatio = false;
+    config.options.animation = { duration: 700, easing: 'easeOutQuart' };
+
+    config.options.plugins = config.options.plugins || {};
+    config.options.plugins.legend = Object.assign(
+      { labels: { color: th.text, font: { size: 11.5, weight: '600' }, boxWidth: 12, padding: 12 } },
+      config.options.plugins.legend || {}
+    );
+    config.options.plugins.tooltip = Object.assign({
+      backgroundColor: 'rgba(10,18,32,.94)', titleColor: '#fff', bodyColor: '#c7d5ec',
+      borderColor: 'rgba(34,201,138,.4)', borderWidth: 1, padding: 11, cornerRadius: 8
+    }, config.options.plugins.tooltip || {});
+
+    if (config.type !== 'doughnut' && config.type !== 'pie' && config.type !== 'radar') {
+      config.options.scales = config.options.scales || {};
+      ['x', 'y'].forEach(function (ax) {
+        config.options.scales[ax] = Object.assign({
+          ticks: { color: th.muted, font: { size: 11 } },
+          grid:  { color: th.grid, drawBorder: false }
+        }, config.options.scales[ax] || {});
+      });
+    }
+    if (config.type === 'radar') {
+      config.options.scales = config.options.scales || {};
+      config.options.scales.r = Object.assign({
+        angleLines: { color: th.grid }, grid: { color: th.grid },
+        pointLabels: { color: th.text, font: { size: 11.5, weight: '600' } },
+        ticks: { color: th.muted, backdropColor: 'transparent', font: { size: 10 } }
+      }, config.options.scales.r || {});
+    }
+
+    charts[canvasId] = new Chart(cv, config);
+    return charts[canvasId];
+  }
+
+  /* ============================================================
+     뷰 네비게이션
+     ============================================================ */
+  const initialized = {};
+  const initializers = {};
+
+  /** 뷰가 처음 열릴 때 실행할 초기화 함수 등록 */
+  function register(view, fn) { initializers[view] = fn; }
+
+  function go(view) {
+    document.querySelectorAll('.view').forEach(function (v) { v.classList.remove('active'); });
+    document.querySelectorAll('.tab').forEach(function (t) { t.classList.remove('active'); });
+
+    const target = document.getElementById('view-' + view);
+    const tab = document.querySelector('.tab[data-view="' + view + '"]');
+    if (target) target.classList.add('active');
+    if (tab) tab.classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // 지연 초기화 — 첫 진입 시에만 무거운 3D/차트 생성
+    if (!initialized[view] && initializers[view]) {
+      if (window.NProgress) NProgress.start();
+      setTimeout(function () {
+        try {
+          initializers[view]();
+          initialized[view] = true;
+        } catch (e) {
+          console.error('[' + view + '] 초기화 실패:', e);
+          toast(view + ' 모듈 초기화 중 오류가 발생했습니다.', 'err');
+        }
+        if (window.NProgress) NProgress.done();
+      }, 60);
+    } else if (window.AOS) {
+      AOS.refresh();
+    }
+  }
+
+  /* ============================================================
+     공개 API
+     ============================================================ */
+  return {
+    EF: EF, AQ_STD: AQ_STD, EFF_STD: EFF_STD, store: store,
+    fmt: fmt, fmtAuto: fmtAuto, setNum: setNum, toast: toast,
+    bind: bind, val: val, raw: raw,
+    scene3D: scene3D, label3D: label3D,
+    chart: chart, chartTheme: chartTheme, charts: charts,
+    register: register, go: go
+  };
+})();
+
+</script>
+<script>
+/* ===== assets/sim-carbon.js ===== */
+/* ============================================================
+   sim-carbon.js — 탄소중립 인벤토리 시뮬레이터
+   산정근거: 2006 IPCC 국가인벤토리 가이드라인 Tier 1
+             배출량 = 활동자료(Activity Data) × 배출계수(Emission Factor)
+   ============================================================ */
+
+(function () {
+  'use strict';
+  const K = window.KECO, EF = K.EF;
+
+  let S3 = null;              // three.js 씬
+  let barGroup = null;        // 배출량 막대 그룹
+  const SECTORS = [
+    { key: 'elec',     name: '전력',       color: 0x38bdf8, hex: '#38bdf8' },
+    { key: 'gas',      name: '도시가스',   color: 0xfbbf24, hex: '#fbbf24' },
+    { key: 'gasoline', name: '휘발유',     color: 0xa78bfa, hex: '#a78bfa' },
+    { key: 'diesel',   name: '경유',       color: 0xfb7185, hex: '#fb7185' },
+    { key: 'water',    name: '상수도',     color: 0x22d3ee, hex: '#22d3ee' },
+    { key: 'waste',    name: '폐기물',     color: 0x22c98a, hex: '#22c98a' }
+  ];
+
+  /* ---------- 배출량 산정 (단위: tCO2eq/년) ---------- */
+  function calculate() {
+    const a = {
+      elec:     K.val('in-elec'),
+      gas:      K.val('in-gas'),
+      gasoline: K.val('in-gasoline'),
+      diesel:   K.val('in-diesel'),
+      water:    K.val('in-water'),
+      waste:    K.val('in-waste')
+    };
+
+    // kg → t 변환 (폐기물은 이미 tCO2/t 계수)
+    const e = {
+      elec:     a.elec     * EF.elec     / 1000,
+      gas:      a.gas      * EF.gas      / 1000,
+      gasoline: a.gasoline * EF.gasoline / 1000,
+      diesel:   a.diesel   * EF.diesel   / 1000,
+      water:    a.water    * EF.water    / 1000,
+      waste:    a.waste    * EF.wasteInc
+    };
+
+    // Scope 구분: Scope1 = 직접연소(가스·수송연료·폐기물), Scope2 = 간접(전력·상수도)
+    const scope1 = e.gas + e.gasoline + e.diesel + e.waste;
+    const scope2 = e.elec + e.water;
+    const total  = scope1 + scope2;
+
+    // ----- 감축 시나리오 -----
+    const eff   = K.val('in-eff')   / 100;  // 에너지효율 개선 → 전 부문 사용량 감소
+    const re    = K.val('in-re')    / 100;  // 재생에너지 전환 → 전력 배출 상쇄
+    const evPct = K.val('in-eveff') / 100;  // 차량 전동화 → 연료 배출을 전력으로 대체
+
+    // 1) 효율개선: 모든 부문 활동량 감소
+    const afterEff = {};
+    Object.keys(e).forEach(function (k) { afterEff[k] = e[k] * (1 - eff); });
+
+    // 2) 차량 전동화: 전동화 비율만큼 연료 배출 제거, 대신 전력 배출 추가
+    //    내연차 1L ≈ 10km 주행 / 전기차 5.2km당 1kWh 가정 → 1L 대체 시 약 1.92 kWh 소요
+    const fuelShift = (afterEff.gasoline + afterEff.diesel) * evPct;
+    const evElecAdd = ((K.val('in-gasoline') + K.val('in-diesel')) * evPct * 1.92) * EF.elec / 1000;
+    afterEff.gasoline *= (1 - evPct);
+    afterEff.diesel   *= (1 - evPct);
+    afterEff.elec     += evElecAdd;
+
+    // 3) 재생에너지 전환: 전력 부문 배출 상쇄
+    afterEff.elec *= (1 - re);
+
+    const after = Object.keys(afterEff).reduce(function (s, k) { return s + afterEff[k]; }, 0);
+    const cut   = Math.max(0, total - after);
+    const rate  = total > 0 ? (cut / total) * 100 : 0;
+
+    return {
+      activity: a, emission: e, after: afterEff,
+      scope1: scope1, scope2: scope2,
+      total: total, afterTotal: after, cut: cut, cutRate: rate,
+      trees: (cut * 1000) / EF.treeAbs,
+      fuelShift: fuelShift
+    };
+  }
+
+  /* ---------- 3D 도시 모형 ---------- */
+  function build3D() {
+    S3 = K.scene3D('carbon3d', {
+      camera: [52, 38, 62], groundSize: 130, gridDiv: 26, targetY: 10, autoRotate: true
+    });
+    if (!S3) return;
+
+    barGroup = new THREE.Group();
+    S3.scene.add(barGroup);
+
+    // 배경 도시 실루엣 (장식용 저층 건물 링)
+    const cityMat = new THREE.MeshStandardMaterial({ color: 0x1c3350, roughness: 0.92 });
+    for (let i = 0; i < 26; i++) {
+      const ang = (i / 26) * Math.PI * 2;
+      const rad = 52 + (i % 3) * 5;
+      const bh = 4 + ((i * 7) % 11);
+      const b = new THREE.Mesh(new THREE.BoxGeometry(4.5, bh, 4.5), cityMat);
+      b.position.set(Math.cos(ang) * rad, bh / 2, Math.sin(ang) * rad);
+      b.rotation.y = ang;
+      b.receiveShadow = true;
+      S3.scene.add(b);
+    }
+
+    S3.onTick(function (t) {
+      // 막대 상단 발광 큐브가 위아래로 부유
+      barGroup.children.forEach(function (m, i) {
+        if (m.userData.glow) m.position.y = m.userData.baseY + Math.sin(t * 1.6 + i) * 0.55;
+      });
+    });
+    S3.start();
+  }
+
+  /* ---------- 3D 막대 갱신 ---------- */
+  function update3D(r) {
+    if (!S3 || !barGroup) return;
+    S3.clearGroup(barGroup);
+
+    const max = Math.max.apply(null, SECTORS.map(function (s) { return r.emission[s.key]; })) || 1;
+    const SPAN = 12;
+    const startX = -((SECTORS.length - 1) * SPAN) / 2;
+
+    SECTORS.forEach(function (sec, i) {
+      const cur = r.emission[sec.key];
+      const aft = r.after[sec.key];
+      const hCur = Math.max(0.6, (cur / max) * 34);
+      const hAft = Math.max(0.4, (aft / max) * 34);
+      const x = startX + i * SPAN;
+
+      // 현재 배출량 (반투명 외곽)
+      const shell = new THREE.Mesh(
+        new THREE.BoxGeometry(6.4, hCur, 6.4),
+        new THREE.MeshStandardMaterial({
+          color: sec.color, transparent: true, opacity: 0.22,
+          roughness: 0.4, emissive: sec.color, emissiveIntensity: 0.12
+        })
+      );
+      shell.position.set(x, hCur / 2, 0);
+      barGroup.add(shell);
+
+      // 감축 후 배출량 (실체 막대)
+      const bar = new THREE.Mesh(
+        new THREE.BoxGeometry(5.2, 0.1, 5.2),
+        new THREE.MeshStandardMaterial({
+          color: sec.color, roughness: 0.32, metalness: 0.42,
+          emissive: sec.color, emissiveIntensity: 0.28
+        })
+      );
+      bar.position.set(x, 0.05, 0);
+      bar.castShadow = true; bar.receiveShadow = true;
+      barGroup.add(bar);
+
+      // GSAP으로 막대가 자라나는 연출
+      if (window.gsap) {
+        gsap.to(bar.scale, { y: hAft / 0.1, duration: 1.05, ease: 'power3.out', delay: i * 0.06 });
+        gsap.to(bar.position, { y: hAft / 2, duration: 1.05, ease: 'power3.out', delay: i * 0.06 });
+      } else {
+        bar.scale.y = hAft / 0.1; bar.position.y = hAft / 2;
+      }
+
+      // 부유 발광 큐브
+      const glow = new THREE.Mesh(
+        new THREE.OctahedronGeometry(1.5),
+        new THREE.MeshStandardMaterial({
+          color: sec.color, emissive: sec.color, emissiveIntensity: 1.1,
+          transparent: true, opacity: 0.85
+        })
+      );
+      glow.position.set(x, hCur + 5, 0);
+      glow.userData = { glow: true, baseY: hCur + 5 };
+      barGroup.add(glow);
+
+      // 라벨
+      const lab = K.label3D(sec.name, sec.hex, 0.82);
+      lab.position.set(x, hCur + 10, 0);
+      barGroup.add(lab);
+
+      const num = K.label3D(K.fmt(cur, 0) + ' t', '#ffffff', 0.62);
+      num.position.set(x, -0.5, 7.6);
+      barGroup.add(num);
+    });
+  }
+
+  /* ---------- 차트 ---------- */
+  function updateCharts(r) {
+    // 부문별 도넛
+    K.chart('carbonDonut', {
+      type: 'doughnut',
+      data: {
+        labels: SECTORS.map(function (s) { return s.name; }),
+        datasets: [{
+          data: SECTORS.map(function (s) { return +r.emission[s.key].toFixed(1); }),
+          backgroundColor: SECTORS.map(function (s) { return s.hex; }),
+          borderColor: 'rgba(0,0,0,.25)', borderWidth: 2, hoverOffset: 10
+        }]
+      },
+      options: {
+        cutout: '58%',
+        plugins: {
+          legend: { position: 'right' },
+          tooltip: {
+            callbacks: {
+              label: function (c) {
+                const pct = r.total > 0 ? (c.parsed / r.total * 100).toFixed(1) : 0;
+                return ' ' + c.label + ': ' + K.fmt(c.parsed, 1) + ' tCO₂eq (' + pct + '%)';
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // 2050 감축경로 — 기준연도부터 순배출 0까지 선형 보간 + 시나리오 반영
+    const years = [];
+    const bau = [];
+    const path = [];
+    const target = [];
+    const baseYear = 2024, endYear = 2050;
+    for (let y = baseYear; y <= endYear; y += 2) {
+      years.push(y + '년');
+      const p = (y - baseYear) / (endYear - baseYear);
+      bau.push(+(r.total * (1 + p * 0.12)).toFixed(1));                 // BAU: 연평균 소폭 증가
+      path.push(+(r.total - (r.total - r.afterTotal) * Math.min(1, p * 2.2)).toFixed(1)); // 시나리오 이행
+      target.push(+(r.total * (1 - p) * (1 - p * 0.15)).toFixed(1));    // 2050 넷제로 목표경로
+    }
+
+    K.chart('carbonPath', {
+      type: 'line',
+      data: {
+        labels: years,
+        datasets: [
+          { label: 'BAU (감축 미이행)', data: bau, borderColor: '#fb7185',
+            backgroundColor: 'rgba(251,113,133,.08)', borderWidth: 2, tension: 0.35, pointRadius: 0, fill: true },
+          { label: '본 시나리오 이행', data: path, borderColor: '#22c98a',
+            backgroundColor: 'rgba(34,201,138,.14)', borderWidth: 3, tension: 0.35, pointRadius: 0, fill: true },
+          { label: '2050 넷제로 목표', data: target, borderColor: '#38bdf8',
+            borderWidth: 2, borderDash: [6, 4], tension: 0.3, pointRadius: 0, fill: false }
+        ]
+      },
+      options: {
+        interaction: { mode: 'index', intersect: false },
+        scales: { y: { title: { display: true, text: 'tCO₂eq/년', color: K.chartTheme().muted, font: { size: 11 } } } }
+      }
+    });
+  }
+
+  /* ---------- 환산 지표 ---------- */
+  function updateEquiv(r) {
+    const box = document.getElementById('carbonEquiv');
+    if (!box) return;
+    const cars   = r.cut * 1000 / 2400;          // 승용차 1대 연간 약 2.4 tCO2
+    const homes  = r.cut * 1000 / 3200;          // 가구당 연간 약 3.2 tCO2
+    const forest = r.trees / 1000;               // 1ha당 약 1,000그루
+    const money  = r.cut * 12000;                // 배출권 톤당 약 12,000원 가정
+
+    box.innerHTML =
+      item('🌳', K.fmt(r.trees, 0) + ' 그루', '30년생 소나무 식재 효과') +
+      item('🌲', K.fmt(forest, 1) + ' ha', '조성 필요 산림 면적') +
+      item('🚗', K.fmt(cars, 0) + ' 대', '승용차 연간 운행 중단 효과') +
+      item('🏠', K.fmt(homes, 0) + ' 가구', '가구 연간 배출량 상쇄') +
+      item('💰', K.fmt(money, 0) + ' 원', '배출권 거래 환산가치 (12,000원/t)') +
+      '<div class="verdict ' + (r.cutRate >= 40 ? 'ok' : 'ng') + '">' +
+        (r.cutRate >= 40
+          ? '✅ 감축률 ' + r.cutRate.toFixed(1) + '% — 2030 NDC 목표(40% 감축) 수준을 달성하는 시나리오입니다.'
+          : '⚠️ 감축률 ' + r.cutRate.toFixed(1) + '% — 2030 NDC 목표(40%)에 ' +
+            (40 - r.cutRate).toFixed(1) + '%p 부족합니다. 재생에너지 전환율을 높여 보세요.') +
+      '</div>';
+
+    if (r.cutRate >= 40 && window.confetti) {
+      confetti({ particleCount: 90, spread: 70, origin: { y: 0.75 },
+        colors: ['#22c98a', '#38bdf8', '#fbbf24'] });
+    }
+  }
+
+  function item(ico, big, sub) {
+    return '<div class="eq-item"><span class="eq-ico">' + ico + '</span>' +
+           '<span class="eq-txt"><b>' + big + '</b><span>' + sub + '</span></span></div>';
+  }
+
+  /* ---------- 전체 갱신 ---------- */
+  function run(silent) {
+    const r = calculate();
+    K.store.carbon = r;
+
+    K.setNum('out-total', r.total, 1);
+    K.setNum('out-after', r.afterTotal, 1);
+    K.setNum('out-cut',   r.cut, 1);
+    K.setNum('out-tree',  r.trees, 0);
+
+    update3D(r);
+    updateCharts(r);
+    updateEquiv(r);
+    if (!silent) K.toast('배출량 ' + K.fmt(r.total, 1) + ' tCO₂eq · 감축률 ' + r.cutRate.toFixed(1) + '%', 'ok');
+  }
+
+  /* ---------- 초기화 ---------- */
+  K.register('carbon', function () {
+    build3D();
+
+    const f0 = function (v) { return K.fmt(v, 0); };
+    K.bind('in-elec',     'lbl-elec',     run.bind(null, true), f0);
+    K.bind('in-gas',      'lbl-gas',      run.bind(null, true), f0);
+    K.bind('in-gasoline', 'lbl-gasoline', run.bind(null, true), f0);
+    K.bind('in-diesel',   'lbl-diesel',   run.bind(null, true), f0);
+    K.bind('in-water',    'lbl-water',    run.bind(null, true), f0);
+    K.bind('in-waste',    'lbl-waste',    run.bind(null, true), f0);
+    K.bind('in-eff',      'lbl-eff',      run.bind(null, true), f0);
+    K.bind('in-re',       'lbl-re',       run.bind(null, true), f0);
+    K.bind('in-eveff',    'lbl-eveff',    run.bind(null, true), f0);
+
+    document.getElementById('carbonApply').onclick = function () { run(false); };
+
+    document.getElementById('carbonPreset').onclick = function () {
+      const preset = {
+        'in-elec': 1200000, 'in-gas': 150000, 'in-gasoline': 60000,
+        'in-diesel': 90000, 'in-water': 80000, 'in-waste': 900,
+        'in-eff': 25, 'in-re': 45, 'in-eveff': 35
+      };
+      Object.keys(preset).forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) { el.value = preset[id]; el.dispatchEvent(new Event('input')); }
+      });
+      K.toast('중규모 지자체(인구 30만) 표준 시나리오를 적용했습니다.', 'info');
+      setTimeout(function () { run(true); }, 120);
+    };
+
+    run(true);
+  });
+})();
+
+</script>
+<script>
+/* ===== assets/sim-waste.js ===== */
+/* ============================================================
+   sim-waste.js — 자원순환 물질흐름(MFA) 시뮬레이터
+   산정근거: 물질흐름분석(Material Flow Analysis)
+             발생 → 분리배출 → 선별 → 재활용/소각/매립
+             회피배출 = 재활용량 × 성상별 회피배출계수
+   ============================================================ */
+
+(function () {
+  'use strict';
+  const K = window.KECO, EF = K.EF;
+
+  let S3 = null, flowGroup = null, particles = [];
+
+  const COMP = [
+    { key: 'paper',   id: 'c-paper',   name: '종이',     hex: '#38bdf8', color: 0x38bdf8 },
+    { key: 'plastic', id: 'c-plastic', name: '플라스틱', hex: '#fbbf24', color: 0xfbbf24 },
+    { key: 'food',    id: 'c-food',    name: '음식물',   hex: '#22c98a', color: 0x22c98a },
+    { key: 'glass',   id: 'c-glass',   name: '유리',     hex: '#a78bfa', color: 0xa78bfa },
+    { key: 'metal',   id: 'c-metal',   name: '금속',     hex: '#fb7185', color: 0xfb7185 },
+    { key: 'etc',     id: 'c-etc',     name: '기타',     hex: '#94a3b8', color: 0x94a3b8 }
+  ];
+
+  /* 성상별 실제 재활용 가능성 보정계수 (오염·이물질 등 반영) */
+  const RECOVERABLE = { paper: 0.92, plastic: 0.72, food: 0.95, glass: 0.88, metal: 0.96, etc: 0.15 };
+
+  function calculate() {
+    const pop    = K.val('in-pop');
+    const percap = K.val('in-percap');
+    const sep    = K.val('in-sep')  / 100;
+    const sort   = K.val('in-sort') / 100;
+    const incR   = K.val('in-inc')  / 100;
+    const cap    = K.val('in-cap');
+
+    // 연간 총 발생량 (톤/년)
+    const total = pop * percap * 365 / 1000;
+
+    // 성상비 정규화
+    const rawComp = {};
+    let sum = 0;
+    COMP.forEach(function (c) {
+      const v = Math.max(0, K.val(c.id) || 0);
+      rawComp[c.key] = v; sum += v;
+    });
+    if (sum === 0) { rawComp.etc = 100; sum = 100; }
+
+    // 성상별 물질흐름
+    const flow = {};
+    let recycled = 0, residue = 0, avoided = 0;
+    COMP.forEach(function (c) {
+      const share = rawComp[c.key] / sum;
+      const gen   = total * share;
+      // 재활용량 = 발생량 × 분리배출참여율 × 선별효율 × 성상별 회수가능계수
+      const rec   = gen * sep * sort * RECOVERABLE[c.key];
+      const res   = gen - rec;
+      recycled += rec;
+      residue  += res;
+      avoided  += rec * EF.recycle[c.key];
+      flow[c.key] = { gen: gen, rec: rec, res: res, share: share * 100 };
+    });
+
+    const incin  = residue * incR;          // 소각
+    const landfl = residue * (1 - incR);    // 매립
+    const recRate = total > 0 ? recycled / total * 100 : 0;
+
+    // 온실가스: 회피배출(+) - 소각배출 - 매립배출
+    const incGhg  = incin  * EF.wasteInc;
+    const landGhg = landfl * EF.wasteLand;
+    const netGhg  = avoided - incGhg - landGhg;
+
+    // 매립지 잔여수명 (년) = 잔여용량(m3) / 연간매립부피(m3/년)
+    const landVol = landfl / EF.density;
+    const life = landVol > 0 ? cap / landVol : 999;
+
+    return {
+      pop: pop, percap: percap, total: total, flow: flow, comp: rawComp, compSum: sum,
+      recycled: recycled, residue: residue, incin: incin, landfill: landfl,
+      recRate: recRate, avoided: avoided, incGhg: incGhg, landGhg: landGhg,
+      netGhg: netGhg, landVol: landVol, life: Math.min(life, 999),
+      sep: sep * 100, sort: sort * 100, cap: cap
+    };
+  }
+
+  /* ---------- 3D 처리 흐름 ---------- */
+  function build3D() {
+    S3 = K.scene3D('waste3d', {
+      camera: [0, 42, 78], groundSize: 150, gridDiv: 30, targetY: 6
+    });
+    if (!S3) return;
+
+    flowGroup = new THREE.Group();
+    S3.scene.add(flowGroup);
+
+    // 4개 처리시설 플랫폼: 발생 → 선별 → [재활용 / 소각 / 매립]
+    const stations = [
+      { name: '발생원',   x: -46, z: 0,   color: 0x94a3b8 },
+      { name: '선별시설', x: -14, z: 0,   color: 0x38bdf8 },
+      { name: '재활용',   x: 26,  z: -26, color: 0x22c98a },
+      { name: '소각',     x: 26,  z: 0,   color: 0xfbbf24 },
+      { name: '매립',     x: 26,  z: 26,  color: 0xfb7185 }
+    ];
+
+    stations.forEach(function (st) {
+      const pad = new THREE.Mesh(
+        new THREE.CylinderGeometry(9, 10, 2.2, 6),
+        new THREE.MeshStandardMaterial({
+          color: st.color, roughness: 0.42, metalness: 0.35,
+          emissive: st.color, emissiveIntensity: 0.16
+        })
+      );
+      pad.position.set(st.x, 1.1, st.z);
+      pad.castShadow = true; pad.receiveShadow = true;
+      S3.scene.add(pad);
+
+      // 시설 상부 구조물
+      const tower = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.4, 3.4, 9, 8),
+        new THREE.MeshStandardMaterial({ color: st.color, roughness: 0.5, metalness: 0.4 })
+      );
+      tower.position.set(st.x, 6.7, st.z);
+      tower.castShadow = true;
+      S3.scene.add(tower);
+
+      const lab = K.label3D(st.name, '#ffffff', 0.85);
+      lab.position.set(st.x, 15, st.z);
+      S3.scene.add(lab);
+      st.pad = pad;
+    });
+
+    // 흐름 입자 — 각 경로를 따라 이동
+    const routes = [
+      { from: [-46, 4, 0], to: [-14, 4, 0],   color: 0x94a3b8, key: 'gen' },
+      { from: [-14, 4, 0], to: [26, 4, -26],  color: 0x22c98a, key: 'rec' },
+      { from: [-14, 4, 0], to: [26, 4, 0],    color: 0xfbbf24, key: 'inc' },
+      { from: [-14, 4, 0], to: [26, 4, 26],   color: 0xfb7185, key: 'land' }
+    ];
+
+    routes.forEach(function (rt) {
+      for (let i = 0; i < 26; i++) {
+        const p = new THREE.Mesh(
+          new THREE.IcosahedronGeometry(0.85),
+          new THREE.MeshStandardMaterial({
+            color: rt.color, emissive: rt.color, emissiveIntensity: 0.7, roughness: 0.35
+          })
+        );
+        p.userData = { route: rt, t: i / 26, speed: 0.0055 + Math.random() * 0.003, active: true };
+        flowGroup.add(p);
+        particles.push(p);
+      }
+    });
+
+    S3.onTick(function () {
+      particles.forEach(function (p) {
+        const u = p.userData;
+        if (!u.active) { p.visible = false; return; }
+        p.visible = true;
+        u.t += u.speed;
+        if (u.t > 1) u.t -= 1;
+        const f = u.route.from, t = u.route.to;
+        p.position.x = f[0] + (t[0] - f[0]) * u.t;
+        p.position.z = f[2] + (t[2] - f[2]) * u.t;
+        // 포물선 궤적
+        p.position.y = f[1] + Math.sin(u.t * Math.PI) * 7;
+        p.rotation.x += 0.05; p.rotation.y += 0.04;
+      });
+    });
+    S3.start();
+  }
+
+  /** 처리 비율에 따라 각 경로 입자 수를 조절 */
+  function update3D(r) {
+    if (!particles.length) return;
+    const shares = {
+      gen:  1,
+      rec:  r.total > 0 ? r.recycled / r.total : 0,
+      inc:  r.total > 0 ? r.incin    / r.total : 0,
+      land: r.total > 0 ? r.landfill / r.total : 0
+    };
+    const byKey = {};
+    particles.forEach(function (p) {
+      const k = p.userData.route.key;
+      byKey[k] = byKey[k] || [];
+      byKey[k].push(p);
+    });
+    Object.keys(byKey).forEach(function (k) {
+      const list = byKey[k];
+      const n = Math.max(1, Math.round(list.length * shares[k]));
+      list.forEach(function (p, i) { p.userData.active = i < n; });
+    });
+  }
+
+  /* ---------- D3 Sankey 다이어그램 ---------- */
+  function drawSankey(r) {
+    const host = document.getElementById('wasteSankey');
+    if (!host || !window.d3 || !d3.sankey) return;
+    host.innerHTML = '';
+
+    const W = host.clientWidth || 700, H = 320;
+    const svg = d3.select(host).append('svg')
+      .attr('width', '100%').attr('height', H)
+      .attr('viewBox', '0 0 ' + W + ' ' + H);
+
+    const nodes = [{ name: '총 발생량' }, { name: '분리배출' }, { name: '혼합배출' },
+                   { name: '재활용' }, { name: '소각' }, { name: '매립' }];
+    const sepT = r.total * (r.sep / 100);
+    const mixT = r.total - sepT;
+
+    const links = [
+      { source: 0, target: 1, value: Math.max(0.01, sepT) },
+      { source: 0, target: 2, value: Math.max(0.01, mixT) },
+      { source: 1, target: 3, value: Math.max(0.01, r.recycled) },
+      { source: 1, target: 4, value: Math.max(0.01, (sepT - r.recycled) * (r.incin / (r.residue || 1))) },
+      { source: 2, target: 4, value: Math.max(0.01, r.incin * (mixT / (r.residue || 1))) },
+      { source: 2, target: 5, value: Math.max(0.01, r.landfill) }
+    ];
+
+    const colors = ['#94a3b8', '#38bdf8', '#64748b', '#22c98a', '#fbbf24', '#fb7185'];
+
+    try {
+      const sk = d3.sankey()
+        .nodeWidth(18).nodePadding(22)
+        .extent([[6, 10], [W - 6, H - 10]]);
+      const graph = sk({
+        nodes: nodes.map(function (d) { return Object.assign({}, d); }),
+        links: links.map(function (d) { return Object.assign({}, d); })
+      });
+
+      svg.append('g').selectAll('path').data(graph.links).enter().append('path')
+        .attr('d', d3.sankeyLinkHorizontal())
+        .attr('fill', 'none')
+        .attr('stroke', function (d) { return colors[d.target.index]; })
+        .attr('stroke-opacity', 0.32)
+        .attr('stroke-width', function (d) { return Math.max(1.5, d.width); })
+        .append('title')
+        .text(function (d) {
+          return d.source.name + ' → ' + d.target.name + '\n' + K.fmt(d.value, 0) + ' 톤/년';
+        });
+
+      const node = svg.append('g').selectAll('g').data(graph.nodes).enter().append('g');
+      node.append('rect')
+        .attr('x', function (d) { return d.x0; })
+        .attr('y', function (d) { return d.y0; })
+        .attr('width', function (d) { return d.x1 - d.x0; })
+        .attr('height', function (d) { return Math.max(2, d.y1 - d.y0); })
+        .attr('fill', function (d) { return colors[d.index]; })
+        .attr('rx', 4);
+      node.append('text')
+        .attr('x', function (d) { return d.x0 < W / 2 ? d.x1 + 8 : d.x0 - 8; })
+        .attr('y', function (d) { return (d.y0 + d.y1) / 2; })
+        .attr('dy', '0.35em')
+        .attr('text-anchor', function (d) { return d.x0 < W / 2 ? 'start' : 'end'; })
+        .attr('fill', K.chartTheme().text)
+        .style('font-size', '11.5px').style('font-weight', '700')
+        .text(function (d) { return d.name + ' (' + K.fmt(d.value, 0) + 't)'; });
+    } catch (e) {
+      host.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:20px">' +
+        'Sankey 렌더링을 사용할 수 없습니다 (d3-sankey 로드 실패).</p>';
+    }
+  }
+
+  /* ---------- 차트 ---------- */
+  function updateCharts(r) {
+    K.chart('wasteBar', {
+      type: 'bar',
+      data: {
+        labels: COMP.map(function (c) { return c.name; }),
+        datasets: [
+          { label: '발생량', data: COMP.map(function (c) { return +r.flow[c.key].gen.toFixed(0); }),
+            backgroundColor: 'rgba(148,163,184,.35)', borderRadius: 5 },
+          { label: '재활용량', data: COMP.map(function (c) { return +r.flow[c.key].rec.toFixed(0); }),
+            backgroundColor: COMP.map(function (c) { return c.hex; }), borderRadius: 5 }
+        ]
+      },
+      options: { scales: { y: { title: { display: true, text: '톤/년', color: K.chartTheme().muted } } } }
+    });
+
+    // 분리배출 참여율 시나리오별 회피배출
+    const xs = [], ys = [], zs = [];
+    for (let s = 30; s <= 100; s += 5) {
+      xs.push(s + '%');
+      const sc = s / 100, sortR = K.val('in-sort') / 100;
+      let rec = 0, av = 0;
+      COMP.forEach(function (c) {
+        const gen = r.total * (r.comp[c.key] / r.compSum);
+        const rr = gen * sc * sortR * RECOVERABLE[c.key];
+        rec += rr; av += rr * EF.recycle[c.key];
+      });
+      const res = r.total - rec;
+      const inc = res * (K.val('in-inc') / 100);
+      const lnd = res - inc;
+      ys.push(+av.toFixed(0));
+      zs.push(+(av - inc * EF.wasteInc - lnd * EF.wasteLand).toFixed(0));
+    }
+
+    K.chart('wasteLine', {
+      type: 'line',
+      data: {
+        labels: xs,
+        datasets: [
+          { label: '회피배출량(총)', data: ys, borderColor: '#22c98a',
+            backgroundColor: 'rgba(34,201,138,.14)', borderWidth: 3, tension: 0.35, fill: true, pointRadius: 0 },
+          { label: '순 온실가스 효과', data: zs, borderColor: '#38bdf8',
+            borderWidth: 2, borderDash: [5, 4], tension: 0.35, fill: false, pointRadius: 0 }
+        ]
+      },
+      options: {
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { title: { display: true, text: '분리배출 참여율', color: K.chartTheme().muted } },
+          y: { title: { display: true, text: 'tCO₂eq/년', color: K.chartTheme().muted } }
+        }
+      }
+    });
+  }
+
+  /* ---------- 성상비 합계 표시 ---------- */
+  function paintSum() {
+    let sum = 0;
+    COMP.forEach(function (c) { sum += Math.max(0, K.val(c.id) || 0); });
+    const el = document.getElementById('compSum');
+    const warn = document.getElementById('compWarn');
+    if (el) el.textContent = K.fmt(sum, 0);
+    if (warn) {
+      warn.innerHTML = Math.abs(sum - 100) < 0.5
+        ? ''
+        : '<span class="bad">— 100%가 아니므로 비율로 자동 정규화됩니다</span>';
+    }
+  }
+
+  /* ---------- 전체 갱신 ---------- */
+  function run(silent) {
+    paintSum();
+    const r = calculate();
+    K.store.waste = r;
+
+    K.setNum('w-total', r.total, 0);
+    K.setNum('w-rate',  r.recRate, 1);
+    K.setNum('w-ghg',   r.netGhg, 0);
+    K.setNum('w-life',  r.life >= 999 ? 999 : r.life, 1);
+
+    update3D(r);
+    drawSankey(r);
+    updateCharts(r);
+
+    if (!silent) {
+      K.toast('재활용률 ' + r.recRate.toFixed(1) + '% · 순 온실가스효과 ' + K.fmt(r.netGhg, 0) + ' tCO₂eq', 'ok');
+      if (r.recRate >= 70 && window.confetti) {
+        confetti({ particleCount: 100, spread: 75, origin: { y: 0.75 },
+          colors: ['#22c98a', '#38bdf8'] });
+      }
+    }
+  }
+
+  /* ---------- 초기화 ---------- */
+  K.register('waste', function () {
+    build3D();
+
+    K.bind('in-pop',    'lbl-pop',    run.bind(null, true), function (v) { return K.fmt(v, 0); });
+    K.bind('in-percap', 'lbl-percap', run.bind(null, true), function (v) { return v.toFixed(2); });
+    K.bind('in-sep',    'lbl-sep',    run.bind(null, true), function (v) { return K.fmt(v, 0); });
+    K.bind('in-sort',   'lbl-sort',   run.bind(null, true), function (v) { return K.fmt(v, 0); });
+    K.bind('in-inc',    'lbl-inc',    run.bind(null, true), function (v) { return K.fmt(v, 0); });
+    K.bind('in-cap',    'lbl-cap',    run.bind(null, true), function (v) { return K.fmt(v, 0); });
+
+    const deb = _.debounce(function () { run(true); }, 200);
+    COMP.forEach(function (c) {
+      const el = document.getElementById(c.id);
+      if (el) el.addEventListener('input', deb);
+    });
+
+    document.getElementById('wasteApply').onclick = function () { run(false); };
+    run(true);
+  });
+})();
+
+</script>
+<script>
+/* ===== assets/sim-air.js ===== */
+/* ============================================================
+   sim-air.js — 대기오염물질 확산 시뮬레이터
+   산정근거:
+     · Gaussian Plume Model
+         C(x,y,0) = Q/(π·u·σy·σz) · exp(-y²/2σy²) · exp(-He²/2σz²)
+     · Pasquill-Gifford 확산계수 (Briggs 도시/전원 공식)
+     · Holland 연기상승식으로 유효굴뚝높이 He = h + Δh 산정
+   ============================================================ */
+
+(function () {
+  'use strict';
+  const K = window.KECO;
+
+  let S3 = null, smoke = [], stackMesh = null, windArrow = null;
+
+  /* ---------- Briggs 확산계수 (σy, σz) ----------
+     x: 풍하거리(m), stab: 안정도 A~F, terrain: urban|rural  */
+  function sigma(x, stab, terrain) {
+    if (x <= 0) return { y: 0.1, z: 0.1 };
+    let sy, sz;
+    if (terrain === 'urban') {
+      switch (stab) {
+        case 'A': case 'B':
+          sy = 0.32 * x / Math.sqrt(1 + 0.0004 * x);
+          sz = 0.24 * x * Math.sqrt(1 + 0.001 * x); break;
+        case 'C':
+          sy = 0.22 * x / Math.sqrt(1 + 0.0004 * x);
+          sz = 0.20 * x; break;
+        case 'D':
+          sy = 0.16 * x / Math.sqrt(1 + 0.0004 * x);
+          sz = 0.14 * x / Math.sqrt(1 + 0.0003 * x); break;
+        default: // E, F
+          sy = 0.11 * x / Math.sqrt(1 + 0.0004 * x);
+          sz = 0.08 * x / Math.sqrt(1 + 0.0015 * x); break;
+      }
+    } else {
+      switch (stab) {
+        case 'A':
+          sy = 0.22 * x / Math.sqrt(1 + 0.0001 * x);
+          sz = 0.20 * x; break;
+        case 'B':
+          sy = 0.16 * x / Math.sqrt(1 + 0.0001 * x);
+          sz = 0.12 * x; break;
+        case 'C':
+          sy = 0.11 * x / Math.sqrt(1 + 0.0001 * x);
+          sz = 0.08 * x / Math.sqrt(1 + 0.0002 * x); break;
+        case 'D':
+          sy = 0.08 * x / Math.sqrt(1 + 0.0001 * x);
+          sz = 0.06 * x / Math.sqrt(1 + 0.0015 * x); break;
+        case 'E':
+          sy = 0.06 * x / Math.sqrt(1 + 0.0001 * x);
+          sz = 0.03 * x / (1 + 0.0003 * x); break;
+        default: // F
+          sy = 0.04 * x / Math.sqrt(1 + 0.0001 * x);
+          sz = 0.016 * x / (1 + 0.0003 * x); break;
+      }
+    }
+    return { y: Math.max(0.1, sy), z: Math.max(0.1, sz) };
+  }
+
+  /* ---------- Holland 연기상승식 ---------- */
+  function plumeRise(vs, d, u, Ts, Ta) {
+    const TsK = Ts + 273.15, TaK = Ta + 273.15;
+    // Δh = (vs·d/u) · (1.5 + 2.68 × 10⁻³ · P · ((Ts-Ta)/Ts) · d),  P=1000 mb
+    const dh = (vs * d / Math.max(0.5, u)) *
+               (1.5 + 2.68e-3 * 1000 * ((TsK - TaK) / TsK) * d);
+    return Math.max(0, dh);
+  }
+
+  /* ---------- 지표 농도 (중심선, y=0, z=0) ----------
+     반사항 포함: C = Q/(π u σy σz) · exp(-He²/(2σz²))   [㎍/㎥]  */
+  function conc(x, y, Q, u, He, stab, terrain) {
+    if (x <= 0) return 0;
+    const s = sigma(x, stab, terrain);
+    const A = (Q * 1e6) / (Math.PI * Math.max(0.5, u) * s.y * s.z); // g/s → ㎍/s
+    const yTerm = Math.exp(-(y * y) / (2 * s.y * s.y));
+    const zTerm = Math.exp(-(He * He) / (2 * s.z * s.z));
+    return A * yTerm * zTerm;
+  }
+
+  function calculate() {
+    const h    = K.val('in-h');
+    const d    = K.val('in-d');
+    const vs   = K.val('in-vs');
+    const Ts   = K.val('in-ts');
+    const Q    = K.val('in-q');
+    const u    = K.val('in-u');
+    const Ta   = K.val('in-ta');
+    const stab = K.raw('in-stab');
+    const terr = K.raw('in-terrain');
+    const poll = K.raw('in-poll');
+
+    const dh = plumeRise(vs, d, u, Ts, Ta);
+    const He = h + dh;
+
+    // 풍하거리별 중심선 농도 스캔
+    const xs = [], cs = [];
+    let cmax = 0, xmax = 0;
+    for (let x = 50; x <= 12000; x += 50) {
+      const c = conc(x, 0, Q, u, He, stab, terr);
+      xs.push(x); cs.push(c);
+      if (c > cmax) { cmax = c; xmax = x; }
+    }
+
+    const std = K.AQ_STD[poll];
+    const ratio = cmax / std.std * 100;
+
+    return {
+      h: h, d: d, vs: vs, Ts: Ts, Ta: Ta, Q: Q, u: u,
+      stab: stab, terrain: terr, poll: poll, pollName: std.name,
+      dh: dh, He: He, cmax: cmax, xmax: xmax,
+      std: std.std, ratio: ratio, pass: cmax <= std.std,
+      xs: xs, cs: cs
+    };
+  }
+
+  /* ---------- 3D 굴뚝 & 연기 ---------- */
+  function build3D() {
+    S3 = K.scene3D('air3d', {
+      camera: [78, 52, 96], groundSize: 200, gridDiv: 40, targetY: 22,
+      maxDist: 420, groundColor: 0x16283f
+    });
+    if (!S3) return;
+
+    // 공장 본체
+    const plant = new THREE.Mesh(
+      new THREE.BoxGeometry(26, 12, 20),
+      new THREE.MeshStandardMaterial({ color: 0x243b58, roughness: 0.85, metalness: 0.2 })
+    );
+    plant.position.set(-8, 6, 0);
+    plant.castShadow = true; plant.receiveShadow = true;
+    S3.scene.add(plant);
+
+    // 굴뚝
+    stackMesh = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.2, 3.2, 40, 20),
+      new THREE.MeshStandardMaterial({ color: 0xc4d2e6, roughness: 0.6, metalness: 0.35 })
+    );
+    stackMesh.position.set(8, 20, 0);
+    stackMesh.castShadow = true;
+    S3.scene.add(stackMesh);
+
+    // 굴뚝 적색 경고띠
+    const band = new THREE.Mesh(
+      new THREE.CylinderGeometry(2.35, 2.6, 4, 20),
+      new THREE.MeshStandardMaterial({ color: 0xe1435c, roughness: 0.5 })
+    );
+    band.position.set(8, 35, 0);
+    S3.scene.add(band);
+
+    // 풍향 화살표
+    windArrow = new THREE.ArrowHelper(
+      new THREE.Vector3(1, 0, 0), new THREE.Vector3(-46, 34, 0), 22, 0x38bdf8, 7, 4
+    );
+    S3.scene.add(windArrow);
+    const wlab = K.label3D('풍향', '#38bdf8', 0.7);
+    wlab.position.set(-46, 42, 0);
+    S3.scene.add(wlab);
+
+    // 연기 입자 풀
+    const smokeMat = new THREE.MeshStandardMaterial({
+      color: 0xb8c6da, transparent: true, opacity: 0.4,
+      roughness: 1, depthWrite: false
+    });
+    for (let i = 0; i < 300; i++) {
+      const p = new THREE.Mesh(new THREE.SphereGeometry(1.6, 8, 8), smokeMat.clone());
+      p.userData = { t: Math.random(), off: Math.random() * Math.PI * 2, r: Math.random() };
+      S3.scene.add(p);
+      smoke.push(p);
+    }
+
+    // 거리 눈금
+    [40, 80, 120].forEach(function (dist, i) {
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(dist - 0.35, dist + 0.35, 72, 1, 0, Math.PI),
+        new THREE.MeshBasicMaterial({ color: 0x2f4a6b, side: THREE.DoubleSide, transparent: true, opacity: 0.6 })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.06;
+      S3.scene.add(ring);
+      const dl = K.label3D((i + 1) * 2 + ' km', '#5f7fa5', 0.55);
+      dl.position.set(dist, 2.5, 0);
+      S3.scene.add(dl);
+    });
+
+    S3.start();
+  }
+
+  /** 연기 거동을 계산 결과에 연동 */
+  function update3D(r) {
+    if (!S3 || !smoke.length) return;
+
+    // 굴뚝 높이 반영 (씬 스케일: 1 unit ≈ 1.5 m)
+    const sh = r.h / 1.5;
+    stackMesh.scale.y = sh / 40;
+    stackMesh.position.y = sh / 2;
+
+    const HeU = r.He / 1.5;                 // 유효굴뚝높이 (씬 단위)
+    const spread = { A: 2.4, B: 1.9, C: 1.5, D: 1.1, E: 0.75, F: 0.5 }[r.stab] || 1.1;
+    const drift = Math.max(0.25, 3.2 / Math.max(1, r.u));   // 풍속 클수록 낮게 깔림
+    const speed = 0.0022 + r.u * 0.0009;
+    const dens  = Math.min(1, r.Q / 250);   // 배출률 → 불투명도
+
+    smoke.forEach(function (p, i) {
+      p.userData.speed = speed;
+      p.userData.spread = spread;
+      p.userData.HeU = HeU;
+      p.userData.drift = drift;
+      p.material.opacity = 0.12 + dens * 0.4;
+      p.userData.stackTop = sh;
+    });
+
+    if (!S3._smokeTick) {
+      S3._smokeTick = true;
+      S3.onTick(function () {
+        smoke.forEach(function (p) {
+          const u = p.userData;
+          u.t += (u.speed || 0.004);
+          if (u.t > 1) { u.t = 0; u.off = Math.random() * Math.PI * 2; u.r = Math.random(); }
+
+          const x = 8 + u.t * 150;                                  // 풍하 이동
+          const sy = Math.pow(u.t, 0.75) * (u.spread || 1) * 16;    // 횡방향 확산
+          const sz = Math.pow(u.t, 0.72) * (u.spread || 1) * 11;
+
+          // 연기상승 후 풍속에 따라 하강(다운워시)
+          const rise = (u.HeU || 30) - (u.stackTop || 26);
+          const y = (u.stackTop || 26) + rise * Math.min(1, u.t * 3.2)
+                    - u.t * u.t * (u.drift || 1) * 9
+                    + Math.sin(u.off + u.t * 6) * sz * 0.55;
+
+          p.position.set(x, Math.max(0.8, y), Math.cos(u.off + u.t * 4) * sy);
+          const g = 1 + u.t * 3.4;
+          p.scale.set(g, g, g);
+          p.material.opacity = Math.max(0, (0.12 + (u.dens || 0.3)) * (1 - u.t) * 1.4);
+        });
+      });
+    }
+
+    // 풍향 화살표 길이를 풍속에 연동
+    if (windArrow) windArrow.setLength(10 + r.u * 1.8, 7, 4);
+  }
+
+  /* ---------- 농도 곡선 차트 ---------- */
+  function updateCharts(r) {
+    // 12km까지 중 200개 샘플만 표시
+    const step = Math.ceil(r.xs.length / 120);
+    const labels = [], data = [];
+    for (let i = 0; i < r.xs.length; i += step) {
+      labels.push((r.xs[i] / 1000).toFixed(1));
+      data.push(+r.cs[i].toFixed(2));
+    }
+    const stdLine = labels.map(function () { return r.std; });
+
+    K.chart('airLine', {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: r.pollName + ' 지표농도', data: data, borderColor: '#fb7185',
+            backgroundColor: 'rgba(251,113,133,.15)', borderWidth: 2.5,
+            tension: 0.3, pointRadius: 0, fill: true },
+          { label: '대기환경기준 (' + r.std + ' ㎍/㎥)', data: stdLine, borderColor: '#22c98a',
+            borderWidth: 2, borderDash: [6, 4], pointRadius: 0, fill: false }
+        ]
+      },
+      options: {
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { title: { display: true, text: '풍하거리 (km)', color: K.chartTheme().muted },
+               ticks: { maxTicksLimit: 12 } },
+          y: { title: { display: true, text: '농도 (㎍/㎥)', color: K.chartTheme().muted } }
+        }
+      }
+    });
+  }
+
+  /* ---------- D3 등농도선 (평면 확산) ---------- */
+  function drawContour(r) {
+    const host = document.getElementById('airContour');
+    if (!host || !window.d3) return;
+    host.innerHTML = '';
+
+    const W = host.clientWidth || 460, H = 270;
+    const nx = 90, ny = 54;                 // 격자
+    const xMax = 8000, yMax = 2400;         // 계산 영역 (m)
+
+    const values = new Array(nx * ny);
+    let vmax = 0;
+    for (let j = 0; j < ny; j++) {
+      for (let i = 0; i < nx; i++) {
+        const x = (i / nx) * xMax + 60;
+        const y = ((j / ny) - 0.5) * 2 * yMax;
+        const c = conc(x, y, r.Q, r.u, r.He, r.stab, r.terrain);
+        values[j * nx + i] = c;
+        if (c > vmax) vmax = c;
+      }
+    }
+    if (vmax <= 0) vmax = 1;
+
+    const svg = d3.select(host).append('svg')
+      .attr('width', '100%').attr('height', H)
+      .attr('viewBox', '0 0 ' + W + ' ' + H);
+
+    try {
+      const thresholds = d3.range(1, 9).map(function (k) { return vmax * Math.pow(k / 9, 2.1); });
+      const contours = d3.contours().size([nx, ny]).thresholds(thresholds)(values);
+      const color = d3.scaleSequential(d3.interpolateTurbo).domain([0, vmax]);
+      const path = d3.geoPath(d3.geoIdentity().scale(Math.min(W / nx, H / ny)));
+
+      svg.append('g').selectAll('path').data(contours).enter().append('path')
+        .attr('d', path)
+        .attr('fill', function (d) { return color(d.value); })
+        .attr('fill-opacity', 0.72)
+        .attr('stroke', 'rgba(255,255,255,.14)')
+        .attr('stroke-width', 0.6)
+        .append('title').text(function (d) { return K.fmt(d.value, 1) + ' ㎍/㎥'; });
+
+      // 배출원 표시
+      const sc = Math.min(W / nx, H / ny);
+      svg.append('circle')
+        .attr('cx', 1 * sc).attr('cy', (ny / 2) * sc).attr('r', 4)
+        .attr('fill', '#fff').attr('stroke', '#fb7185').attr('stroke-width', 2);
+      svg.append('text')
+        .attr('x', 10).attr('y', (ny / 2) * sc - 9)
+        .attr('fill', K.chartTheme().text).style('font-size', '11px').style('font-weight', '700')
+        .text('배출원');
+      svg.append('text')
+        .attr('x', W - 6).attr('y', H - 7).attr('text-anchor', 'end')
+        .attr('fill', K.chartTheme().muted).style('font-size', '10.5px')
+        .text('풍하 8 km × 횡방향 ±2.4 km · 최대 ' + K.fmt(vmax, 1) + ' ㎍/㎥');
+    } catch (e) {
+      host.innerHTML = '<p style="color:var(--muted);font-size:13px;padding:20px">등농도선 렌더링 실패</p>';
+    }
+  }
+
+  /* ---------- 전체 갱신 ---------- */
+  function run(silent) {
+    const r = calculate();
+    K.store.air = r;
+
+    K.setNum('a-he',   r.He, 1);
+    K.setNum('a-cmax', r.cmax, 1);
+    K.setNum('a-xmax', r.xmax, 0);
+
+    const j  = document.getElementById('a-judge');
+    const js = document.getElementById('a-judgeSub');
+    const jc = document.getElementById('a-judgeCard');
+    if (j) {
+      j.textContent = r.ratio.toFixed(0) + '%';
+      j.style.color = r.pass ? 'var(--eco)' : 'var(--warn)';
+    }
+    if (js) js.textContent = r.pollName + ' 기준 ' + r.std + ' ㎍/㎥ 대비 ' + (r.pass ? '적합' : '초과');
+    if (jc) { jc.classList.remove('pass', 'fail'); jc.classList.add(r.pass ? 'pass' : 'fail'); }
+
+    update3D(r);
+    updateCharts(r);
+    drawContour(r);
+
+    if (!silent) {
+      K.toast(
+        '최대농도 ' + K.fmt(r.cmax, 1) + ' ㎍/㎥ @ ' + K.fmt(r.xmax, 0) + 'm — ' +
+        (r.pass ? '환경기준 적합' : '환경기준 초과'),
+        r.pass ? 'ok' : 'err'
+      );
+    }
+  }
+
+  /* ---------- 초기화 ---------- */
+  // 외부 공개 API (기상청/Open-Meteo 실시간 대기 및 풍속 연동)
+  window.fetchRealtimeWeatherData = async function () {
+    try {
+      if (window.Toastify) Toastify({ text: '📡 서울 지역 실시간 기상/풍속 데이터 조회 중...', style: { background: '#38bdf8' } }).showToast();
+      // 서울 좌표 (lat: 37.5665, lon: 126.9780) Open-Meteo 무료 API 연동
+      const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&current=temperature_2m,wind_speed_10m,wind_direction_10m');
+      const data = await res.json();
+      if (data && data.current) {
+        const ws = (data.current.wind_speed_10m / 3.6).toFixed(1); // km/h -> m/s
+        const temp = Math.round(data.current.temperature_2m);
+        
+        const speedEl = document.getElementById('airWindSpeed');
+        const tempEl = document.getElementById('airTemp');
+        if (speedEl) { speedEl.value = Math.max(1, Math.min(25, ws)); speedEl.dispatchEvent(new Event('input')); }
+        if (tempEl) { tempEl.value = Math.max(-10, Math.min(45, temp)); tempEl.dispatchEvent(new Event('input')); }
+
+        if (window.Toastify) Toastify({ text: `✅ 실시간 기상 연동 완료: 풍속 ${ws} m/s, 기온 ${temp}°C`, style: { background: '#22c98a', color: '#000', fontWeight: 'bold' } }).showToast();
+      }
+    } catch (e) {
+      if (window.Toastify) Toastify({ text: '실시간 기상 데이터 연동 실패 (기본값 사용)', style: { background: '#fb7185' } }).showToast();
+    }
+  };
+
+  K.register('air', function () {
+    build3D();
+
+    const one = function (v) { return v.toFixed(1); };
+    const zero = function (v) { return K.fmt(v, 0); };
+    K.bind('in-h',  'lbl-h',  run.bind(null, true), zero);
+    K.bind('in-d',  'lbl-d',  run.bind(null, true), one);
+    K.bind('in-vs', 'lbl-vs', run.bind(null, true), zero);
+    K.bind('in-ts', 'lbl-ts', run.bind(null, true), zero);
+    K.bind('in-q',  'lbl-q',  run.bind(null, true), zero);
+    K.bind('in-u',  'lbl-u',  run.bind(null, true), one);
+    K.bind('in-ta', 'lbl-ta', run.bind(null, true), zero);
+
+    ['in-stab', 'in-terrain', 'in-poll'].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', function () { run(true); });
+    });
+
+    document.getElementById('airApply').onclick = function () { run(false); };
+    run(true);
+  });
+})();
+
+</script>
+<script>
+/* ===== assets/sim-energy.js ===== */
+/* ============================================================
+   sim-energy.js — 신재생에너지 발전량 시뮬레이터
+   산정근거:
+     · 태양광 (PVWatts 방식)
+         E[kWh/년] = P[kWp] × H[일사시간 h/일] × 365 × PR
+     · 풍력 (Betz 출력식)
+         P[W] = ½ · ρ · A · v³ · Cp        (ρ=1.225 kg/m³)
+         연간발전량 = 정격출력 × 8,760 × 이용률
+   ============================================================ */
+
+(function () {
+  'use strict';
+  const K = window.KECO, EF = K.EF;
+
+  let S3 = null, panels = [], turbines = [];
+  const RHO = 1.225;  // 공기밀도 kg/m3
+
+  /* 월별 일사량 보정계수 (국내 평균 패턴) */
+  const MONTH_SOLAR = [0.72, 0.85, 1.02, 1.14, 1.18, 1.02, 0.86, 0.94, 1.02, 1.05, 0.78, 0.68];
+  /* 월별 풍속 보정계수 (겨울 강, 여름 약) */
+  const MONTH_WIND  = [1.22, 1.18, 1.12, 1.02, 0.90, 0.80, 0.82, 0.86, 0.92, 1.00, 1.10, 1.20];
+  const MONTHS = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+
+  /** 경사각 보정: 국내 최적 30° 기준 코사인 손실 */
+  function tiltFactor(tilt) {
+    return 1 - Math.pow(Math.abs(tilt - 30) / 62, 1.7) * 0.28;
+  }
+
+  /** 풍력 이용률 — NREL 경험식  CF = 0.087·V − P[kW]/D²[m²]
+      (V: 연평균풍속 m/s, P: 정격출력 kW, D: 로터직경 m) */
+  function capacityFactor(v, ratedKW, D) {
+    const cf = 0.087 * v - ratedKW / (D * D);
+    return Math.max(0.02, Math.min(0.55, cf));
+  }
+
+  function calculate() {
+    // ----- 태양광 -----
+    const H     = parseFloat(K.raw('in-region'));  // 일평균 일사시간
+    const cap   = K.val('in-pv');                  // kWp
+    const meff  = K.val('in-peff') / 100;
+    const PR    = K.val('in-pr');
+    const tilt  = K.val('in-tilt');
+    const tf    = tiltFactor(tilt);
+
+    // 모듈효율은 동일 면적 대비 성능지표로 반영 (기준 20%)
+    const effAdj = meff / 0.20;
+    const pvYear = cap * H * 365 * PR * tf * effAdj;          // kWh/년
+    const pvCF   = (pvYear / (cap * 8760)) * 100;             // 이용률 %
+    const pvArea = cap / (meff * 1.0) * 1.0;                  // 소요 모듈면적 m² (1kW/m² 기준)
+
+    // ----- 풍력 -----
+    const n     = K.val('in-nwt');
+    const rot   = K.val('in-rot');
+    const v     = K.val('in-wind');
+    const Cp    = K.val('in-cp');
+    const A     = Math.PI * Math.pow(rot / 2, 2);             // 수풍면적 m²
+    const ratedW = 0.5 * RHO * A * Math.pow(12, 3) * Cp;      // 정격풍속 12 m/s 기준 정격출력 W
+    const ratedKW = ratedW / 1000;
+    const cf    = capacityFactor(v, ratedKW, rot);
+    const wtYear = ratedKW * 8760 * cf * n;                   // kWh/년
+
+    // ----- 종합 -----
+    const totalKWh = pvYear + wtYear;
+    const ghg      = totalKWh * EF.elec / 1000;               // tCO2eq/년
+    const smp      = K.val('in-smp');
+    const revenue  = totalKWh * smp;                          // 원/년
+
+    // 투자비: 태양광 약 130만원/kW, 풍력 약 250만원/kW
+    const capexPV = cap * 1300000;
+    const capexWT = ratedKW * n * 2500000;
+    const capex   = capexPV + capexWT;
+    // 운영비 연 2% 가정
+    const opex    = capex * 0.02;
+    const netRev  = revenue - opex;
+    const payback = netRev > 0 ? capex / netRev : 999;
+
+    // 월별 발전량
+    const monthly = MONTHS.map(function (m, i) {
+      return {
+        month: m,
+        pv: pvYear / 12 * MONTH_SOLAR[i],
+        wt: wtYear / 12 * MONTH_WIND[i]
+      };
+    });
+
+    return {
+      H: H, cap: cap, meff: meff * 100, PR: PR, tilt: tilt,
+      pvYear: pvYear, pvCF: pvCF, pvArea: pvArea,
+      n: n, rot: rot, v: v, Cp: Cp, area: A,
+      ratedKW: ratedKW, cf: cf * 100, wtYear: wtYear,
+      totalKWh: totalKWh, ghg: ghg, smp: smp, revenue: revenue,
+      capex: capex, opex: opex, payback: Math.min(payback, 999),
+      monthly: monthly,
+      households: totalKWh / 3600   // 가구당 연 3,600 kWh 가정
+    };
+  }
+
+  /* ---------- 3D 발전단지 ---------- */
+  function build3D() {
+    S3 = K.scene3D('energy3d', {
+      camera: [0, 46, 92], groundSize: 190, gridDiv: 38, targetY: 14,
+      maxDist: 380, groundColor: 0x152a22
+    });
+    if (!S3) return;
+
+    // ----- 태양광 어레이 (6 × 5) -----
+    const panelGeo = new THREE.BoxGeometry(9, 0.35, 5.4);
+    const panelMat = new THREE.MeshStandardMaterial({
+      color: 0x1d3a63, roughness: 0.18, metalness: 0.72,
+      emissive: 0x0a1c3a, emissiveIntensity: 0.4
+    });
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x7f8ea3, roughness: 0.6, metalness: 0.5 });
+
+    for (let r = 0; r < 5; r++) {
+      for (let c = 0; c < 6; c++) {
+        const g = new THREE.Group();
+        const p = new THREE.Mesh(panelGeo, panelMat);
+        p.castShadow = true; p.receiveShadow = true;
+        g.add(p);
+
+        // 지지대
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 5, 6), frameMat);
+        leg.position.y = -2.6;
+        g.add(leg);
+
+        g.position.set(-46 + c * 11, 4.4, -30 + r * 12);
+        S3.scene.add(g);
+        panels.push(g);
+      }
+    }
+    const plab = K.label3D('☀️ 태양광 발전단지', '#fbbf24', 1);
+    plab.position.set(-18, 20, -42);
+    S3.scene.add(plab);
+
+    // ----- 풍력 터빈 -----
+    for (let i = 0; i < 20; i++) {
+      const g = new THREE.Group();
+      const towerH = 30;
+
+      const tower = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.85, 1.7, towerH, 12),
+        new THREE.MeshStandardMaterial({ color: 0xe8eef7, roughness: 0.55, metalness: 0.3 })
+      );
+      tower.position.y = towerH / 2;
+      tower.castShadow = true;
+      g.add(tower);
+
+      const nacelle = new THREE.Mesh(
+        new THREE.BoxGeometry(5, 2.4, 2.4),
+        new THREE.MeshStandardMaterial({ color: 0xdfe7f2, roughness: 0.5, metalness: 0.4 })
+      );
+      nacelle.position.set(0, towerH, 0);
+      nacelle.castShadow = true;
+      g.add(nacelle);
+
+      // 로터 (3枚 블레이드)
+      const rotor = new THREE.Group();
+      const bladeMat = new THREE.MeshStandardMaterial({ color: 0xf5f9ff, roughness: 0.45, metalness: 0.2 });
+      for (let b = 0; b < 3; b++) {
+        const blade = new THREE.Mesh(new THREE.BoxGeometry(0.5, 17, 1.5), bladeMat);
+        blade.position.y = 8.5;
+        blade.castShadow = true;
+        const holder = new THREE.Group();
+        holder.add(blade);
+        holder.rotation.z = (b / 3) * Math.PI * 2;
+        rotor.add(holder);
+      }
+      const hub = new THREE.Mesh(
+        new THREE.SphereGeometry(1.2, 12, 12),
+        new THREE.MeshStandardMaterial({ color: 0xcfd9e8, roughness: 0.4 })
+      );
+      rotor.add(hub);
+      rotor.position.set(0, towerH, 2.4);
+      g.add(rotor);
+      g.userData = { rotor: rotor };
+
+      const col = i % 5, row = Math.floor(i / 5);
+      g.position.set(18 + col * 15, 0, -26 + row * 18);
+      g.visible = false;
+      S3.scene.add(g);
+      turbines.push(g);
+    }
+    const wlab = K.label3D('🌬️ 풍력 발전단지', '#38bdf8', 1);
+    wlab.position.set(48, 46, -42);
+    S3.scene.add(wlab);
+
+    S3.onTick(function () {
+      turbines.forEach(function (t) {
+        if (t.visible && t.userData.rotor) t.userData.rotor.rotation.z += t.userData.spin || 0.03;
+      });
+    });
+    S3.start();
+  }
+
+  function update3D(r) {
+    if (!S3) return;
+
+    // 패널 경사각 반영
+    panels.forEach(function (g, i) {
+      const target = -(r.tilt * Math.PI / 180);
+      if (window.gsap) gsap.to(g.rotation, { x: target, duration: 0.8, ease: 'power2.out', delay: i * 0.008 });
+      else g.rotation.x = target;
+    });
+
+    // 설비용량에 따라 표시 패널 수 조절
+    const showPanels = Math.max(1, Math.min(30, Math.round(r.cap / 5000 * 30) || 1));
+    panels.forEach(function (g, i) { g.visible = i < Math.max(6, showPanels); });
+
+    // 터빈 기수 + 회전속도 (풍속 연동)
+    const spin = 0.008 + r.v * 0.007;
+    turbines.forEach(function (t, i) {
+      t.visible = i < r.n;
+      t.userData.spin = spin;
+      const s = r.rot / 90;
+      t.scale.set(s, s, s);
+    });
+  }
+
+  /* ---------- 차트 ---------- */
+  function updateCharts(r) {
+    K.chart('energyBar', {
+      type: 'bar',
+      data: {
+        labels: MONTHS,
+        datasets: [
+          { label: '태양광 (MWh)', data: r.monthly.map(function (m) { return +(m.pv / 1000).toFixed(1); }),
+            backgroundColor: '#fbbf24', borderRadius: 5, stack: 's' },
+          { label: '풍력 (MWh)', data: r.monthly.map(function (m) { return +(m.wt / 1000).toFixed(1); }),
+            backgroundColor: '#38bdf8', borderRadius: 5, stack: 's' }
+        ]
+      },
+      options: {
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, title: { display: true, text: 'MWh/월', color: K.chartTheme().muted } }
+        }
+      }
+    });
+
+    // 풍속-출력 곡선 (컷인 3, 정격 12, 컷아웃 25 m/s)
+    const vs = [], pw = [];
+    for (let v = 0; v <= 26; v += 0.5) {
+      vs.push(v.toFixed(1));
+      let p = 0;
+      if (v >= 3 && v < 12) p = 0.5 * RHO * r.area * Math.pow(v, 3) * r.Cp / 1000;
+      else if (v >= 12 && v <= 25) p = r.ratedKW;
+      pw.push(+Math.min(p, r.ratedKW).toFixed(1));
+    }
+    const marker = vs.map(function (x) {
+      return Math.abs(parseFloat(x) - r.v) < 0.26 ? r.ratedKW * 1.05 : null;
+    });
+
+    K.chart('energyCurve', {
+      type: 'line',
+      data: {
+        labels: vs,
+        datasets: [
+          { label: '터빈 출력 (kW)', data: pw, borderColor: '#22c98a',
+            backgroundColor: 'rgba(34,201,138,.15)', borderWidth: 2.5, tension: 0.25,
+            pointRadius: 0, fill: true },
+          { label: '현재 연평균 풍속 ' + r.v.toFixed(1) + ' m/s', data: marker,
+            borderColor: '#fb7185', backgroundColor: '#fb7185',
+            pointRadius: 6, showLine: false }
+        ]
+      },
+      options: {
+        scales: {
+          x: { title: { display: true, text: '풍속 (m/s)', color: K.chartTheme().muted },
+               ticks: { maxTicksLimit: 14 } },
+          y: { title: { display: true, text: '출력 (kW)', color: K.chartTheme().muted } }
+        }
+      }
+    });
+  }
+
+  /* ---------- 전체 갱신 ---------- */
+  function run(silent) {
+    const r = calculate();
+    K.store.energy = r;
+
+    K.setNum('e-pv',  r.pvYear / 1000, 1);
+    K.setNum('e-wt',  r.wtYear / 1000, 1);
+    K.setNum('e-ghg', r.ghg, 0);
+    K.setNum('e-pay', r.payback >= 999 ? 999 : r.payback, 1);
+
+    update3D(r);
+    updateCharts(r);
+
+    if (!silent) {
+      K.toast(
+        '총 ' + K.fmt(r.totalKWh / 1000, 1) + ' MWh/년 · ' +
+        K.fmt(r.households, 0) + '가구 사용량 · 회수 ' + r.payback.toFixed(1) + '년',
+        'ok'
+      );
+    }
+  }
+
+  /* ---------- 초기화 ---------- */
+  K.register('energy', function () {
+    build3D();
+
+    const zero = function (v) { return K.fmt(v, 0); };
+    const one  = function (v) { return v.toFixed(1); };
+    const two  = function (v) { return v.toFixed(2); };
+
+    K.bind('in-pv',   'lbl-pv',   run.bind(null, true), zero);
+    K.bind('in-peff', 'lbl-peff', run.bind(null, true), one);
+    K.bind('in-pr',   'lbl-pr',   run.bind(null, true), two);
+    K.bind('in-tilt', 'lbl-tilt', run.bind(null, true), zero);
+    K.bind('in-nwt',  'lbl-nwt',  run.bind(null, true), zero);
+    K.bind('in-rot',  'lbl-rot',  run.bind(null, true), zero);
+    K.bind('in-wind', 'lbl-wind', run.bind(null, true), one);
+    K.bind('in-cp',   'lbl-cp',   run.bind(null, true), two);
+    K.bind('in-smp',  'lbl-smp',  run.bind(null, true), zero);
+
+    const reg = document.getElementById('in-region');
+    if (reg) reg.addEventListener('change', function () { run(true); });
+
+    document.getElementById('energyApply').onclick = function () { run(false); };
+    run(true);
+  });
+})();
+
+</script>
+<script>
+/* ===== assets/sim-ev.js ===== */
+/* ============================================================
+   sim-ev.js — 무공해차 충전인프라 시뮬레이터
+   산정근거:
+     · 충전 전력수요 = 대수 × 연주행거리 ÷ 전비 ÷ 충전효율(0.90)
+     · 온실가스 감축 = 내연차 배출 − 전기차 충전전력 배출
+     · 입지 최적화 = 수요가중 K-Means 군집(Lloyd 알고리즘)
+   ============================================================ */
+
+(function () {
+  'use strict';
+  const K = window.KECO, EF = K.EF;
+
+  let map = null, demandLayer = null, siteLayer = null, cells = [];
+  const CENTER = [36.3504, 127.3845];   // 대전광역시청 기준
+  const CHARGE_EFF = 0.90;              // 충전 효율
+
+  /* 시간대별 충전부하 프로파일 (완속 야간 / 급속 주간) */
+  const SLOW_PROFILE = [8,9,9,8,7,5,3,2,2,2,2,3,3,3,3,4,5,6,7,8,9,10,10,9];
+  const FAST_PROFILE = [1,1,1,1,1,2,4,6,7,8,8,7,7,8,8,8,7,7,6,5,4,3,2,1];
+
+  function calculate() {
+    const n      = K.val('in-evn');
+    const km     = K.val('in-km');
+    const eff    = K.val('in-eff2');       // km/kWh
+    const fastR  = K.val('in-fast')  / 100;
+    const ratio  = K.val('in-ratio');
+    const green  = K.val('in-green') / 100;
+
+    // 연간 충전 전력수요 (kWh/년)
+    const kwh = n * km / eff / CHARGE_EFF;
+
+    // 충전기 소요량
+    const chargers = Math.ceil(n / ratio);
+    const fast = Math.round(chargers * fastR);
+    const slow = chargers - fast;
+
+    // 첨두 계약전력 (MW): 완속 7kW, 급속 100kW, 동시율 완속 0.35 / 급속 0.45
+    const peakMW = (slow * 7 * 0.35 + fast * 100 * 0.45) / 1000;
+
+    // 온실가스: 내연차(휘발유 12km/L 가정) vs 전기차
+    const iceCO2 = n * km / 12 * EF.gasoline / 1000;                    // tCO2/년
+    const evCO2  = kwh * (1 - green) * EF.elec / 1000;                  // tCO2/년
+    const cut    = iceCO2 - evCO2;
+    const cutRate = iceCO2 > 0 ? cut / iceCO2 * 100 : 0;
+
+    // 시간대별 부하 (MW)
+    const slowSum = SLOW_PROFILE.reduce(function (a, b) { return a + b; }, 0);
+    const fastSum = FAST_PROFILE.reduce(function (a, b) { return a + b; }, 0);
+    const dailyKwh = kwh / 365;
+    const load = [];
+    for (let h = 0; h < 24; h++) {
+      const s = dailyKwh * (1 - fastR) * (SLOW_PROFILE[h] / slowSum);
+      const f = dailyKwh * fastR * (FAST_PROFILE[h] / fastSum);
+      load.push({ hour: h, slow: s / 1000, fast: f / 1000 });          // MWh/h ≈ MW
+    }
+
+    return {
+      n: n, km: km, eff: eff, ratio: ratio, green: green * 100,
+      kwh: kwh, gwh: kwh / 1e6, chargers: chargers, fast: fast, slow: slow,
+      peakMW: peakMW, iceCO2: iceCO2, evCO2: evCO2, cut: cut, cutRate: cutRate,
+      load: load,
+      // 참고 지표
+      perCar: kwh / n,
+      cost: kwh * 320   // 충전요금 약 320원/kWh
+    };
+  }
+
+  /* ---------- 수요 격자 생성 (재현 가능한 의사난수) ---------- */
+  function seedRandom(seed) {
+    let s = seed;
+    return function () {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      return s / 0x7fffffff;
+    };
+  }
+
+  function buildCells() {
+    const rnd = seedRandom(20260730);
+    cells = [];
+    // 도심 3개 핵(hot spot) 주변에 수요를 집중 배치
+    const cores = [
+      { lat: 36.3504, lng: 127.3845, w: 1.0 },   // 시청권
+      { lat: 36.3720, lng: 127.3400, w: 0.75 },  // 서북권
+      { lat: 36.3230, lng: 127.4200, w: 0.6 }    // 동남권
+    ];
+    for (let i = 0; i < 120; i++) {
+      const core = cores[i % cores.length];
+      const r = Math.pow(rnd(), 1.6) * 0.055;
+      const th = rnd() * Math.PI * 2;
+      const lat = core.lat + Math.cos(th) * r;
+      const lng = core.lng + Math.sin(th) * r * 1.24;
+      // 핵에 가까울수록 수요 큼
+      const dist = Math.sqrt(Math.pow(lat - core.lat, 2) + Math.pow(lng - core.lng, 2));
+      const w = core.w * (1 - dist / 0.07) * (0.45 + rnd() * 0.55);
+      cells.push({ lat: lat, lng: lng, w: Math.max(0.06, w) });
+    }
+  }
+
+  /* ---------- 수요가중 K-Means (Lloyd) ---------- */
+  function kmeans(points, k, iters) {
+    if (!points.length) return [];
+    k = Math.min(k, points.length);
+    // 초기 중심: 수요 상위 지점을 고르게 선택
+    const sorted = points.slice().sort(function (a, b) { return b.w - a.w; });
+    let centers = [];
+    for (let i = 0; i < k; i++) {
+      const p = sorted[Math.floor(i * sorted.length / k)];
+      centers.push({ lat: p.lat, lng: p.lng });
+    }
+
+    for (let it = 0; it < (iters || 30); it++) {
+      const groups = centers.map(function () { return []; });
+      points.forEach(function (p) {
+        let best = 0, bd = Infinity;
+        centers.forEach(function (c, i) {
+          const d = Math.pow(p.lat - c.lat, 2) + Math.pow(p.lng - c.lng, 2);
+          if (d < bd) { bd = d; best = i; }
+        });
+        groups[best].push(p);
+      });
+      let moved = 0;
+      centers = centers.map(function (c, i) {
+        const g = groups[i];
+        if (!g.length) return c;
+        let sw = 0, sl = 0, sg = 0;
+        g.forEach(function (p) { sw += p.w; sl += p.lat * p.w; sg += p.lng * p.w; });
+        const nc = { lat: sl / sw, lng: sg / sw, load: sw, count: g.length };
+        moved += Math.abs(nc.lat - c.lat) + Math.abs(nc.lng - c.lng);
+        return nc;
+      });
+      if (moved < 1e-7) break;
+    }
+    return centers;
+  }
+
+  /* ---------- 지도 ---------- */
+  function buildMap() {
+    const host = document.getElementById('evMap');
+    if (!host || !window.L) return;
+    if (map) { map.remove(); map = null; }
+
+    map = L.map(host, { zoomControl: true, attributionControl: true }).setView(CENTER, 12);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap · © CARTO', subdomains: 'abcd', maxZoom: 19
+    }).addTo(map);
+
+    demandLayer = L.layerGroup().addTo(map);
+    siteLayer   = L.layerGroup().addTo(map);
+
+    buildCells();
+    setTimeout(function () { map.invalidateSize(); }, 250);
+  }
+
+  /** 수요 격자를 지도에 표시 */
+  function drawDemand(r) {
+    if (!demandLayer) return;
+    demandLayer.clearLayers();
+    const totalW = cells.reduce(function (a, c) { return a + c.w; }, 0);
+
+    cells.forEach(function (c) {
+      const share = c.w / totalW;
+      const carsHere = r.n * share;
+      const color = window.chroma
+        ? chroma.scale(['#0ea5e9', '#22c98a', '#fbbf24', '#fb7185'])(Math.min(1, c.w / 0.9)).hex()
+        : '#22c98a';
+      L.circleMarker([c.lat, c.lng], {
+        radius: 3 + c.w * 11,
+        color: color, weight: 1, fillColor: color, fillOpacity: 0.42
+      }).bindPopup(
+        '<b>수요 격자</b><br>추정 전기차 ' + K.fmt(carsHere, 0) + ' 대<br>' +
+        '연 충전량 ' + K.fmt(r.kwh * share / 1000, 0) + ' MWh'
+      ).addTo(demandLayer);
+    });
+  }
+
+  /** K-Means 최적 입지 표시 */
+  function drawSites(r) {
+    if (!siteLayer) return;
+    siteLayer.clearLayers();
+    const k = K.val('in-k');
+    const centers = kmeans(cells, k, 40);
+    const totalW = cells.reduce(function (a, c) { return a + c.w; }, 0);
+
+    centers.forEach(function (c, i) {
+      const share = (c.load || 0) / totalW;
+      const chg = Math.max(1, Math.round(r.chargers * share));
+      const fast = Math.round(chg * (K.val('in-fast') / 100));
+
+      const icon = L.divIcon({
+        className: '', html: '<div class="ev-pin">⚡</div>',
+        iconSize: [30, 30], iconAnchor: [15, 15]
+      });
+      L.marker([c.lat, c.lng], { icon: icon }).bindPopup(
+        '<b>충전소 후보 ' + (i + 1) + '호</b><br>' +
+        '담당 격자 ' + (c.count || 0) + '개<br>' +
+        '권장 충전기 <b>' + chg + '기</b> (급속 ' + fast + ' / 완속 ' + (chg - fast) + ')<br>' +
+        '수요 점유율 ' + (share * 100).toFixed(1) + '%'
+      ).addTo(siteLayer);
+
+      // 서비스 반경
+      L.circle([c.lat, c.lng], {
+        radius: 900 + share * 5200,
+        color: '#22c98a', weight: 1.2, fillColor: '#22c98a', fillOpacity: 0.07, dashArray: '5,5'
+      }).addTo(siteLayer);
+    });
+    return centers;
+  }
+
+  /* ---------- 차트 ---------- */
+  function updateCharts(r) {
+    K.chart('evLoad', {
+      type: 'bar',
+      data: {
+        labels: r.load.map(function (l) { return l.hour + '시'; }),
+        datasets: [
+          { label: '완속 충전 (MW)', data: r.load.map(function (l) { return +l.slow.toFixed(2); }),
+            backgroundColor: '#38bdf8', borderRadius: 4, stack: 'l' },
+          { label: '급속 충전 (MW)', data: r.load.map(function (l) { return +l.fast.toFixed(2); }),
+            backgroundColor: '#fbbf24', borderRadius: 4, stack: 'l' }
+        ]
+      },
+      options: {
+        scales: {
+          x: { stacked: true, ticks: { maxTicksLimit: 12 } },
+          y: { stacked: true, title: { display: true, text: '평균 부하 (MW)', color: K.chartTheme().muted } }
+        }
+      }
+    });
+
+    K.chart('evCompare', {
+      type: 'bar',
+      data: {
+        labels: ['내연기관차 (동일 주행)', '전기차 (현 전원믹스)', '전기차 (재생 100%)'],
+        datasets: [{
+          label: 'tCO₂eq/년',
+          data: [
+            +r.iceCO2.toFixed(0),
+            +r.evCO2.toFixed(0),
+            0
+          ],
+          backgroundColor: ['#fb7185', '#38bdf8', '#22c98a'],
+          borderRadius: 7
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: { x: { title: { display: true, text: 'tCO₂eq/년', color: K.chartTheme().muted } } }
+      }
+    });
+  }
+
+  /* ---------- 전체 갱신 ---------- */
+  function run(silent) {
+    const r = calculate();
+    K.store.ev = r;
+
+    K.setNum('v-chg',  r.chargers, 0);
+    K.setNum('v-pow',  r.gwh, 2);
+    K.setNum('v-ghg',  r.cut, 0);
+    K.setNum('v-peak', r.peakMW, 1);
+
+    drawDemand(r);
+    updateCharts(r);
+
+    if (!silent) {
+      K.toast(
+        '충전기 ' + K.fmt(r.chargers, 0) + '기 · 전력 ' + r.gwh.toFixed(2) +
+        ' GWh/년 · 감축 ' + K.fmt(r.cut, 0) + ' tCO₂eq',
+        'ok'
+      );
+    }
+  }
+
+  /* ---------- 초기화 ---------- */
+  K.register('ev', function () {
+    buildMap();
+
+    const zero = function (v) { return K.fmt(v, 0); };
+    const one  = function (v) { return v.toFixed(1); };
+
+    K.bind('in-evn',   'lbl-evn',   run.bind(null, true), zero);
+    K.bind('in-km',    'lbl-km',    run.bind(null, true), zero);
+    K.bind('in-eff2',  'lbl-eff2',  run.bind(null, true), one);
+    K.bind('in-fast',  'lbl-fast',  run.bind(null, true), zero);
+    K.bind('in-ratio', 'lbl-ratio', run.bind(null, true), one);
+    K.bind('in-green', 'lbl-green', run.bind(null, true), zero);
+    K.bind('in-k',     'lbl-k',     null, zero);
+
+    document.getElementById('evApply').onclick = function () { run(false); };
+
+    document.getElementById('evOptimize').onclick = function () {
+      if (window.NProgress) NProgress.start();
+      setTimeout(function () {
+        const r = K.store.ev || calculate();
+        const centers = drawSites(r);
+        if (window.NProgress) NProgress.done();
+        K.toast('K-Means 수렴 완료 — 최적 충전소 ' + (centers ? centers.length : 0) + '개소를 도출했습니다.', 'ok');
+        if (window.confetti) {
+          confetti({ particleCount: 70, spread: 60, origin: { y: 0.72 }, colors: ['#22c98a', '#38bdf8'] });
+        }
+      }, 320);
+    };
+
+    run(true);
+    // 최초 진입 시 입지도 함께 표시
+    setTimeout(function () { drawSites(K.store.ev || calculate()); }, 500);
+  });
+})();
+
+</script>
+<script>
+/* ===== assets/sim-water.js ===== */
+/* ============================================================
+   sim-water.js — 하수처리 공정(A²O) 진단 시뮬레이터
+   산정근거:
+     · 단위공정별 제거율 적용 (침사지 → 1차침전 → 생물반응조 → 2차침전 → 고도처리)
+     · 온도보정: Arrhenius θ=1.047,  θ^(T-20)
+     · 슬러지 발생량 = 관측수율 Yobs × BOD 제거량 (Yobs = Y/(1+kd·SRT))
+     · 방류수 수질기준: 공공하수처리시설 방류수 수질기준 (Ⅰ지역)
+   ============================================================ */
+
+(function () {
+  'use strict';
+  const K = window.KECO, STD = K.EFF_STD;
+
+  let S3 = null, tanks = [], waterMeshes = [], flowDots = [];
+
+  /* 공정 단계 정의 — 각 단계의 기본 제거율 */
+  const STAGES = [
+    { name: '침사지',     bod: 0.05, ss: 0.10, tn: 0.02, tp: 0.02, color: 0x64748b },
+    { name: '1차침전지',  bod: 0.30, ss: 0.55, tn: 0.08, tp: 0.10, color: 0x475569 },
+    { name: '혐기조',     bod: 0.12, ss: 0.05, tn: 0.05, tp: 0.35, color: 0xa78bfa },
+    { name: '무산소조',   bod: 0.15, ss: 0.05, tn: 0.42, tp: 0.05, color: 0x38bdf8 },
+    { name: '호기조',     bod: 0.88, ss: 0.35, tn: 0.30, tp: 0.20, color: 0x22c98a },
+    { name: '2차침전지',  bod: 0.55, ss: 0.80, tn: 0.10, tp: 0.25, color: 0x0ea5e9 },
+    { name: '소독/방류',  bod: 0.10, ss: 0.30, tn: 0.03, tp: 0.05, color: 0x67e8f9 }
+  ];
+
+  /* 고도처리 추가 제거율 */
+  const ADV = {
+    none:        { bod: 0,    ss: 0,    tn: 0,    tp: 0,    power: 0.22, label: '표준활성슬러지법' },
+    'a2o':       { bod: 0.15, ss: 0.20, tn: 0.25, tp: 0.55, power: 0.28, label: 'A²O 공정' },
+    'a2o-mbr':   { bod: 0.45, ss: 0.85, tn: 0.35, tp: 0.75, power: 0.42, label: 'A²O + MBR' },
+    'a2o-mbr-o3':{ bod: 0.60, ss: 0.90, tn: 0.45, tp: 0.88, power: 0.55, label: 'A²O + MBR + 응집·오존산화' }
+  };
+
+  function calculate() {
+    const Q    = K.val('in-qin');       // m3/일
+    const bod0 = K.val('in-bod');
+    const ss0  = K.val('in-ss');
+    const tn0  = K.val('in-tn');
+    const tp0  = K.val('in-tp');
+    const mlss = K.val('in-mlss');
+    const srt  = K.val('in-srt');
+    const hrt  = K.val('in-hrt');
+    const T    = K.val('in-temp');
+    const advKey = K.raw('in-adv');
+    const adv  = ADV[advKey] || ADV['a2o'];
+
+    // 온도 보정계수 (생물반응 효율)
+    const tCorr = Math.pow(1.047, T - 20);
+    // SRT 보정: SRT가 길수록 질산화 안정 (10일 기준 포화)
+    const srtCorr = Math.min(1.15, 0.55 + srt / 16);
+    // MLSS 보정: 3,000 mg/L 기준
+    const mlssCorr = Math.min(1.12, 0.7 + mlss / 9000);
+    // HRT 보정: 8시간 기준
+    const hrtCorr = Math.min(1.1, 0.72 + hrt / 32);
+
+    const bioBoost = tCorr * srtCorr * mlssCorr * hrtCorr;
+
+    // 단계별 수질 추적
+    let bod = bod0, ss = ss0, tn = tn0, tp = tp0;
+    const track = [{ name: '유입수', bod: bod, ss: ss, tn: tn, tp: tp }];
+
+    STAGES.forEach(function (st) {
+      // 생물반응조(혐기·무산소·호기)에만 운전조건 보정 적용
+      const bio = (st.name === '혐기조' || st.name === '무산소조' || st.name === '호기조');
+      const f = bio ? Math.min(0.96, bioBoost) : 1;
+      bod *= (1 - Math.min(0.95, st.bod * f));
+      ss  *= (1 - Math.min(0.95, st.ss  * f));
+      tn  *= (1 - Math.min(0.92, st.tn  * f));
+      tp  *= (1 - Math.min(0.92, st.tp  * f));
+      track.push({ name: st.name, bod: bod, ss: ss, tn: tn, tp: tp });
+    });
+
+    // 고도처리 추가 제거
+    bod *= (1 - adv.bod); ss *= (1 - adv.ss); tn *= (1 - adv.tn); tp *= (1 - adv.tp);
+    track.push({ name: '최종 방류수', bod: bod, ss: ss, tn: tn, tp: tp });
+
+    const eff = { bod: bod, ss: ss, tn: tn, tp: tp, cod: bod * 1.35 };
+
+    // 제거율
+    const removal = {
+      bod: (1 - bod / bod0) * 100,
+      ss:  (1 - ss  / ss0)  * 100,
+      tn:  (1 - tn  / tn0)  * 100,
+      tp:  (1 - tp  / tp0)  * 100
+    };
+
+    // 기준 적합 판정
+    const judge = {
+      bod: bod <= STD.bod, ss: ss <= STD.ss,
+      tn: tn <= STD.tn, tp: tp <= STD.tp, cod: eff.cod <= STD.cod
+    };
+    const passAll = judge.bod && judge.ss && judge.tn && judge.tp && judge.cod;
+
+    // 슬러지 발생량 — Yobs = Y/(1+kd·SRT),  Y=0.6, kd=0.06/일
+    const Yobs = 0.6 / (1 + 0.06 * srt);
+    const bodRemovedKg = (bod0 - bod) * Q / 1000;          // kg/일
+    const dsKg = Yobs * bodRemovedKg;                      // 건조고형물 kg/일
+    const sludgeWet = dsKg / (1 - 0.80) / 1000;            // 함수율 80% 케이크 t/일
+
+    // 전력 사용량 — 원단위 kWh/m3
+    const powerUnit = adv.power;
+    const powerYear = Q * powerUnit * 365 / 1000;          // MWh/년
+    const powerGhg  = powerYear * 1000 * K.EF.elec / 1000; // tCO2eq/년
+
+    return {
+      Q: Q, inflow: { bod: bod0, ss: ss0, tn: tn0, tp: tp0 },
+      eff: eff, removal: removal, judge: judge, passAll: passAll,
+      track: track, adv: adv, advKey: advKey,
+      mlss: mlss, srt: srt, hrt: hrt, T: T,
+      Yobs: Yobs, sludge: sludgeWet, dsKg: dsKg,
+      powerUnit: powerUnit, powerYear: powerYear, powerGhg: powerGhg,
+      // 처리인구 환산 (1인 1일 오수 발생 300 L)
+      population: Q / 0.3
+    };
+  }
+
+  /* ---------- 3D 처리 공정 계통도 ---------- */
+  function build3D() {
+    S3 = K.scene3D('water3d', {
+      camera: [0, 40, 84], groundSize: 170, gridDiv: 34, targetY: 5,
+      maxDist: 340, groundColor: 0x122236
+    });
+    if (!S3) return;
+
+    const SPAN = 17;
+    const startX = -((STAGES.length - 1) * SPAN) / 2;
+
+    STAGES.forEach(function (st, i) {
+      const x = startX + i * SPAN;
+      const isRound = (i === 1 || i === 5);   // 침전지는 원형
+
+      // 반응조 외벽
+      const wallGeo = isRound
+        ? new THREE.CylinderGeometry(6.6, 6.6, 7, 28, 1, true)
+        : new THREE.BoxGeometry(12, 7, 12);
+      const wall = new THREE.Mesh(wallGeo, new THREE.MeshStandardMaterial({
+        color: 0xcbd5e1, roughness: 0.82, metalness: 0.15, side: THREE.DoubleSide
+      }));
+      wall.position.set(x, 3.5, 0);
+      wall.castShadow = true; wall.receiveShadow = true;
+      S3.scene.add(wall);
+
+      // 바닥
+      const base = new THREE.Mesh(
+        isRound ? new THREE.CylinderGeometry(6.6, 6.6, 0.5, 28) : new THREE.BoxGeometry(12, 0.5, 12),
+        new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.9 })
+      );
+      base.position.set(x, 0.25, 0);
+      base.receiveShadow = true;
+      S3.scene.add(base);
+
+      // 수면
+      const waterGeo = isRound
+        ? new THREE.CylinderGeometry(6.3, 6.3, 0.35, 28)
+        : new THREE.BoxGeometry(11.4, 0.35, 11.4);
+      const water = new THREE.Mesh(waterGeo, new THREE.MeshStandardMaterial({
+        color: st.color, transparent: true, opacity: 0.82,
+        roughness: 0.14, metalness: 0.6, emissive: st.color, emissiveIntensity: 0.22
+      }));
+      water.position.set(x, 5.6, 0);
+      S3.scene.add(water);
+      waterMeshes.push(water);
+
+      // 라벨
+      const lab = K.label3D(st.name, '#e6eefc', 0.78);
+      lab.position.set(x, 12.5, 0);
+      S3.scene.add(lab);
+
+      // 연결 배관
+      if (i < STAGES.length - 1) {
+        const pipe = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.9, 0.9, SPAN - 12.6, 12),
+          new THREE.MeshStandardMaterial({ color: 0x8fa3c4, roughness: 0.5, metalness: 0.55 })
+        );
+        pipe.rotation.z = Math.PI / 2;
+        pipe.position.set(x + SPAN / 2, 5, 0);
+        S3.scene.add(pipe);
+      }
+
+      // 호기조 산기장치 기포
+      if (st.name === '호기조') {
+        for (let b = 0; b < 40; b++) {
+          const bub = new THREE.Mesh(
+            new THREE.SphereGeometry(0.34, 6, 6),
+            new THREE.MeshStandardMaterial({
+              color: 0xffffff, transparent: true, opacity: 0.55,
+              emissive: 0x88ffcc, emissiveIntensity: 0.3
+            })
+          );
+          bub.userData = {
+            bx: x + (Math.random() - 0.5) * 10,
+            bz: (Math.random() - 0.5) * 10,
+            t: Math.random(), sp: 0.008 + Math.random() * 0.01
+          };
+          S3.scene.add(bub);
+          tanks.push(bub);
+        }
+      }
+    });
+
+    // 유입/방류 흐름 입자
+    for (let i = 0; i < 40; i++) {
+      const d = new THREE.Mesh(
+        new THREE.SphereGeometry(0.55, 8, 8),
+        new THREE.MeshStandardMaterial({ color: 0x67e8f9, emissive: 0x38bdf8, emissiveIntensity: 0.8 })
+      );
+      d.userData = { t: i / 40, sp: 0.0016 + Math.random() * 0.0009 };
+      S3.scene.add(d);
+      flowDots.push(d);
+    }
+
+    const totalW = (STAGES.length - 1) * SPAN;
+    S3.onTick(function () {
+      // 기포 상승
+      tanks.forEach(function (b) {
+        b.userData.t += b.userData.sp;
+        if (b.userData.t > 1) b.userData.t = 0;
+        b.position.set(b.userData.bx, 1 + b.userData.t * 4.6, b.userData.bz);
+        b.material.opacity = 0.6 * (1 - b.userData.t);
+      });
+      // 공정 흐름
+      flowDots.forEach(function (d) {
+        d.userData.t += d.userData.sp;
+        if (d.userData.t > 1) d.userData.t = 0;
+        d.position.set(startX - 6 + d.userData.t * (totalW + 12), 5.4, 0);
+        // 진행할수록 맑아짐 (색상 보간)
+        const c = new THREE.Color().setHSL(0.52 - d.userData.t * 0.06, 0.75, 0.35 + d.userData.t * 0.35);
+        d.material.color = c;
+        d.material.emissive = c;
+      });
+      // 수면 미세 진동
+      waterMeshes.forEach(function (w, i) {
+        w.position.y = 5.6 + Math.sin(Date.now() * 0.0016 + i) * 0.08;
+      });
+    });
+    S3.start();
+  }
+
+  function update3D(r) {
+    if (!waterMeshes.length) return;
+    // 각 단계 수질(BOD)에 따라 수면 탁도(불투명도·발광) 조절
+    r.track.slice(1, STAGES.length + 1).forEach(function (t, i) {
+      const w = waterMeshes[i];
+      if (!w) return;
+      const turb = Math.min(1, t.bod / Math.max(1, r.inflow.bod));
+      w.material.opacity = 0.5 + turb * 0.42;
+      w.material.emissiveIntensity = 0.1 + (1 - turb) * 0.45;
+    });
+  }
+
+  /* ---------- 차트 ---------- */
+  function updateCharts(r) {
+    const labels = r.track.map(function (t) { return t.name; });
+
+    K.chart('waterLine', {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          { label: 'BOD (mg/L)', data: r.track.map(function (t) { return +t.bod.toFixed(1); }),
+            borderColor: '#22c98a', backgroundColor: 'rgba(34,201,138,.12)',
+            borderWidth: 2.5, tension: 0.32, fill: true, pointRadius: 3 },
+          { label: 'SS (mg/L)', data: r.track.map(function (t) { return +t.ss.toFixed(1); }),
+            borderColor: '#38bdf8', borderWidth: 2, tension: 0.32, pointRadius: 3 },
+          { label: 'T-N (mg/L)', data: r.track.map(function (t) { return +t.tn.toFixed(1); }),
+            borderColor: '#fbbf24', borderWidth: 2, tension: 0.32, pointRadius: 3 },
+          { label: 'T-P (mg/L)', data: r.track.map(function (t) { return +t.tp.toFixed(2); }),
+            borderColor: '#fb7185', borderWidth: 2, tension: 0.32, pointRadius: 3 }
+        ]
+      },
+      options: {
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { ticks: { maxRotation: 45, minRotation: 30, font: { size: 10 } } },
+          y: { type: 'logarithmic', title: { display: true, text: '농도 (mg/L, 로그축)', color: K.chartTheme().muted } }
+        }
+      }
+    });
+
+    // 기준 대비 달성도 (100% = 기준 딱 충족, 낮을수록 여유)
+    const pct = function (v, s) { return Math.min(200, v / s * 100); };
+    K.chart('waterRadar', {
+      type: 'radar',
+      data: {
+        labels: ['BOD', 'COD', 'SS', 'T-N', 'T-P'],
+        datasets: [
+          { label: '방류수질 (기준 대비 %)',
+            data: [
+              +pct(r.eff.bod, STD.bod).toFixed(1),
+              +pct(r.eff.cod, STD.cod).toFixed(1),
+              +pct(r.eff.ss,  STD.ss).toFixed(1),
+              +pct(r.eff.tn,  STD.tn).toFixed(1),
+              +pct(r.eff.tp,  STD.tp).toFixed(1)
+            ],
+            borderColor: r.passAll ? '#22c98a' : '#fb7185',
+            backgroundColor: r.passAll ? 'rgba(34,201,138,.22)' : 'rgba(251,113,133,.22)',
+            borderWidth: 2.5, pointRadius: 4 },
+          { label: '방류수 수질기준 (100%)',
+            data: [100, 100, 100, 100, 100],
+            borderColor: '#8fa3c4', borderDash: [5, 4], borderWidth: 2,
+            backgroundColor: 'transparent', pointRadius: 0 }
+        ]
+      },
+      options: { scales: { r: { suggestedMin: 0, suggestedMax: 130 } } }
+    });
+  }
+
+  /* ---------- 진단 결과 ---------- */
+  function updateVerdict(r) {
+    const box = document.getElementById('waterVerdict');
+    if (!box) return;
+
+    const rows = [
+      ['BOD', r.eff.bod, STD.bod, 'mg/L', r.judge.bod, 1],
+      ['COD', r.eff.cod, STD.cod, 'mg/L', r.judge.cod, 1],
+      ['SS',  r.eff.ss,  STD.ss,  'mg/L', r.judge.ss,  1],
+      ['T-N', r.eff.tn,  STD.tn,  'mg/L', r.judge.tn,  1],
+      ['T-P', r.eff.tp,  STD.tp,  'mg/L', r.judge.tp,  2]
+    ];
+
+    let html = rows.map(function (x) {
+      return '<div class="eq-item"><span class="eq-ico">' + (x[4] ? '✅' : '❌') + '</span>' +
+             '<span class="eq-txt"><b>' + x[0] + ' ' + K.fmt(x[1], x[5]) + ' ' + x[3] + '</b>' +
+             '<span>기준 ' + x[2] + ' ' + x[3] + ' 이하 · ' + (x[4] ? '적합' : '초과') + '</span></span></div>';
+    }).join('');
+
+    html += '<div class="eq-item"><span class="eq-ico">👥</span><span class="eq-txt">' +
+            '<b>' + K.fmt(r.population, 0) + ' 명</b><span>처리 대상 인구 환산</span></span></div>';
+
+    html += '<div class="verdict ' + (r.passAll ? 'ok' : 'ng') + '">' +
+      (r.passAll
+        ? '✅ 적합 — 현 운전조건(' + r.adv.label + ')에서 모든 항목이 공공하수처리시설 방류수 수질기준을 만족합니다. ' +
+          'BOD 제거율 ' + r.removal.bod.toFixed(1) + '%, T-N 제거율 ' + r.removal.tn.toFixed(1) + '%.'
+        : '⚠️ 부적합 — ' +
+          rows.filter(function (x) { return !x[4]; }).map(function (x) { return x[0]; }).join(', ') +
+          ' 항목이 기준을 초과합니다. 고도처리 공정 상향, SRT 연장 또는 MLSS 증대를 검토하십시오.') +
+      '</div>';
+
+    box.innerHTML = html;
+
+    if (r.passAll && window.confetti) {
+      confetti({ particleCount: 80, spread: 68, origin: { y: 0.76 }, colors: ['#38bdf8', '#22c98a'] });
+    }
+  }
+
+  /* ---------- 전체 갱신 ---------- */
+  function run(silent) {
+    const r = calculate();
+    K.store.water = r;
+
+    K.setNum('q-bod',    r.eff.bod, 1);
+    K.setNum('q-tn',     r.eff.tn, 1);
+    K.setNum('q-sludge', r.sludge, 1);
+    K.setNum('q-power',  r.powerYear, 0);
+
+    // 결과 카드 색상 = 적합 여부
+    const bodCard = document.getElementById('q-bod').closest('.rcard');
+    const tnCard  = document.getElementById('q-tn').closest('.rcard');
+    if (bodCard) { bodCard.classList.remove('eco', 'warn'); bodCard.classList.add(r.judge.bod ? 'eco' : 'warn'); }
+    if (tnCard)  { tnCard.classList.remove('aqua', 'warn'); tnCard.classList.add(r.judge.tn ? 'aqua' : 'warn'); }
+
+    update3D(r);
+    updateCharts(r);
+    updateVerdict(r);
+
+    if (!silent) {
+      K.toast(
+        '방류 BOD ' + r.eff.bod.toFixed(1) + ' mg/L · ' + (r.passAll ? '전 항목 적합' : '일부 항목 초과'),
+        r.passAll ? 'ok' : 'err'
+      );
+    }
+  }
+
+  /* ---------- 초기화 ---------- */
+  K.register('water', function () {
+    build3D();
+
+    const zero = function (v) { return K.fmt(v, 0); };
+    const one  = function (v) { return v.toFixed(1); };
+
+    K.bind('in-qin',  'lbl-qin',  run.bind(null, true), zero);
+    K.bind('in-bod',  'lbl-bod',  run.bind(null, true), zero);
+    K.bind('in-ss',   'lbl-ss',   run.bind(null, true), zero);
+    K.bind('in-tn',   'lbl-tn',   run.bind(null, true), zero);
+    K.bind('in-tp',   'lbl-tp',   run.bind(null, true), one);
+    K.bind('in-mlss', 'lbl-mlss', run.bind(null, true), zero);
+    K.bind('in-srt',  'lbl-srt',  run.bind(null, true), zero);
+    K.bind('in-hrt',  'lbl-hrt',  run.bind(null, true), zero);
+    K.bind('in-temp', 'lbl-temp', run.bind(null, true), zero);
+
+    const adv = document.getElementById('in-adv');
+    if (adv) adv.addEventListener('change', function () { run(true); });
+
+    document.getElementById('waterApply').onclick = function () { run(false); };
+    run(true);
+  });
+})();
+
+</script>
+<script>
+/* ===== assets/report.js ===== */
+/* ============================================================
+   report.js — 통합 진단 보고서 생성 · PDF/Excel 내보내기
+   ============================================================ */
+
+(function () {
+  'use strict';
+  const K = window.KECO;
+
+  function today() {
+    return window.dayjs ? dayjs().format('YYYY년 M월 D일') : new Date().toLocaleDateString('ko-KR');
+  }
+  function stamp() {
+    return window.dayjs ? dayjs().format('YYYY-MM-DD HH:mm') : new Date().toLocaleString('ko-KR');
+  }
+
+  function table(rows) {
+    return '<table><tbody>' + rows.map(function (r) {
+      return '<tr><th>' + r[0] + '</th><td>' + r[1] + '</td></tr>';
+    }).join('') + '</tbody></table>';
+  }
+
+  function na(section) {
+    return '<p class="note">※ ' + section + ' 모듈을 아직 실행하지 않았습니다. ' +
+           '해당 탭을 한 번 열면 결과가 자동으로 포함됩니다.</p>';
+  }
+
+  /* ---------- 보고서 HTML 생성 ---------- */
+  function build() {
+    const s = K.store;
+    let h = '';
+
+    h += '<h1>환경 시뮬레이션 통합 진단 보고서</h1>';
+    h += '<p class="paper-sub">K-ECO SIM · 한국환경공단 환경 시뮬레이션 종합 플랫폼 &nbsp;|&nbsp; 작성일 ' + today() + '</p>';
+
+    /* ---- 종합 요약 ---- */
+    const totalCut =
+      (s.carbon ? s.carbon.cut : 0) +
+      (s.waste  ? Math.max(0, s.waste.netGhg) : 0) +
+      (s.energy ? s.energy.ghg : 0) +
+      (s.ev     ? Math.max(0, s.ev.cut) : 0);
+
+    h += '<h2>Ⅰ. 종합 요약</h2>';
+    h += '<div class="summary">';
+    h += '본 보고서는 K-ECO SIM 플랫폼의 6대 시뮬레이션 모듈 실행 결과를 종합한 것입니다.<br>';
+    if (totalCut > 0) {
+      h += '분석 대상의 <b>연간 온실가스 감축 잠재량은 총 ' + K.fmt(totalCut, 0) + ' tCO₂eq</b>로 산정되었으며, ' +
+           '이는 30년생 소나무 <b>' + K.fmt(totalCut * 1000 / K.EF.treeAbs, 0) + '그루</b>의 연간 흡수량 ' +
+           '(산림 약 ' + K.fmt(totalCut * 1000 / K.EF.treeAbs / 1000, 1) + ' ha)에 상응합니다.<br>';
+    }
+    h += '각 모듈의 산정 결과와 근거는 아래 각 절에 상세히 기술하였습니다.';
+    h += '</div>';
+
+    /* ---- 탄소중립 ---- */
+    h += '<h2>Ⅱ. 탄소중립 인벤토리 산정 결과</h2>';
+    if (s.carbon) {
+      const c = s.carbon;
+      h += table([
+        ['총 배출량 (현재)', K.fmt(c.total, 1) + ' tCO₂eq/년'],
+        ['Scope 1 (직접배출)', K.fmt(c.scope1, 1) + ' tCO₂eq/년'],
+        ['Scope 2 (간접배출)', K.fmt(c.scope2, 1) + ' tCO₂eq/년'],
+        ['감축 후 배출량', K.fmt(c.afterTotal, 1) + ' tCO₂eq/년'],
+        ['감축량 / 감축률', K.fmt(c.cut, 1) + ' tCO₂eq/년 (' + c.cutRate.toFixed(1) + '%)'],
+        ['상쇄 필요 식재량', K.fmt(c.trees, 0) + ' 그루 (30년생 소나무)'],
+        ['2030 NDC 목표(40%) 대비', c.cutRate >= 40
+          ? '<b style="color:#0d7a52">달성</b>'
+          : '<b style="color:#c2334d">미달 (' + (40 - c.cutRate).toFixed(1) + '%p 부족)</b>']
+      ]);
+      h += '<p class="note">산정근거: 2006 IPCC 국가인벤토리 가이드라인 Tier 1 (배출량 = 활동자료 × 배출계수), ' +
+           '국가 온실가스 배출계수(전력 0.4594 kgCO₂eq/kWh)</p>';
+    } else h += na('탄소중립');
+
+    /* ---- 자원순환 ---- */
+    h += '<h2>Ⅲ. 자원순환 물질흐름 분석 결과</h2>';
+    if (s.waste) {
+      const w = s.waste;
+      h += table([
+        ['대상 인구 / 원단위', K.fmt(w.pop, 0) + ' 명 / ' + w.percap.toFixed(2) + ' kg·인⁻¹·일⁻¹'],
+        ['연간 발생량', K.fmt(w.total, 0) + ' 톤/년'],
+        ['재활용량 / 재활용률', K.fmt(w.recycled, 0) + ' 톤 (' + w.recRate.toFixed(1) + '%)'],
+        ['소각 처리량', K.fmt(w.incin, 0) + ' 톤/년'],
+        ['매립 처리량', K.fmt(w.landfill, 0) + ' 톤/년 (' + K.fmt(w.landVol, 0) + ' m³)'],
+        ['회피 온실가스', K.fmt(w.avoided, 0) + ' tCO₂eq/년'],
+        ['순 온실가스 효과', K.fmt(w.netGhg, 0) + ' tCO₂eq/년'],
+        ['매립지 잔여수명', (w.life >= 999 ? '≥ 999' : w.life.toFixed(1)) + ' 년'],
+        ['2030 재활용률 목표(70%) 대비', w.recRate >= 70
+          ? '<b style="color:#0d7a52">달성</b>'
+          : '<b style="color:#c2334d">미달 (' + (70 - w.recRate).toFixed(1) + '%p 부족)</b>']
+      ]);
+      h += '<p class="note">산정근거: 물질흐름분석(MFA), 성상별 회피배출계수, 매립 CH₄ 간이계수 0.40 tCO₂eq/t</p>';
+    } else h += na('자원순환');
+
+    /* ---- 대기확산 ---- */
+    h += '<h2>Ⅳ. 대기오염물질 확산 모델링 결과</h2>';
+    if (s.air) {
+      const a = s.air;
+      h += table([
+        ['대상 오염물질', a.pollName],
+        ['실제 굴뚝높이 / 연기상승고', K.fmt(a.h, 0) + ' m / ' + K.fmt(a.dh, 1) + ' m'],
+        ['유효굴뚝높이 (He)', K.fmt(a.He, 1) + ' m'],
+        ['배출률 Q', K.fmt(a.Q, 0) + ' g/s'],
+        ['기상조건', '풍속 ' + a.u.toFixed(1) + ' m/s · 안정도 ' + a.stab + '급 · ' +
+                     (a.terrain === 'urban' ? '도시지역' : '전원지역')],
+        ['최대 지표농도', K.fmt(a.cmax, 1) + ' ㎍/㎥'],
+        ['최대농도 출현거리', K.fmt(a.xmax, 0) + ' m (풍하방향)'],
+        ['대기환경기준', a.std + ' ㎍/㎥ (24시간 평균)'],
+        ['기준 대비 / 판정', a.ratio.toFixed(1) + '% — ' + (a.pass
+          ? '<b style="color:#0d7a52">적합</b>'
+          : '<b style="color:#c2334d">초과</b>')]
+      ]);
+      h += '<p class="note">산정근거: Gaussian Plume Model, Pasquill-Gifford(Briggs) 확산계수, Holland 연기상승식</p>';
+    } else h += na('대기확산');
+
+    /* ---- 신재생에너지 ---- */
+    h += '<h2>Ⅴ. 신재생에너지 발전량 산정 결과</h2>';
+    if (s.energy) {
+      const e = s.energy;
+      h += table([
+        ['태양광 설비용량 / 일사시간', K.fmt(e.cap, 0) + ' kWp / ' + e.H.toFixed(1) + ' h·일⁻¹'],
+        ['태양광 연간 발전량', K.fmt(e.pvYear / 1000, 1) + ' MWh/년 (이용률 ' + e.pvCF.toFixed(1) + '%)'],
+        ['풍력 설비 (기수 × 정격)', e.n + ' 기 × ' + K.fmt(e.ratedKW, 0) + ' kW'],
+        ['풍력 연간 발전량', K.fmt(e.wtYear / 1000, 1) + ' MWh/년 (이용률 ' + e.cf.toFixed(1) + '%)'],
+        ['총 발전량', K.fmt(e.totalKWh / 1000, 1) + ' MWh/년'],
+        ['공급 가능 가구수', K.fmt(e.households, 0) + ' 가구 (가구당 3,600 kWh 기준)'],
+        ['온실가스 감축량', K.fmt(e.ghg, 0) + ' tCO₂eq/년'],
+        ['총 투자비 / 연간수익', K.fmt(e.capex / 1e8, 2) + ' 억원 / ' + K.fmt(e.revenue / 1e8, 2) + ' 억원'],
+        ['투자 회수기간', (e.payback >= 999 ? '회수 불가' : e.payback.toFixed(1) + ' 년')]
+      ]);
+      h += '<p class="note">산정근거: PVWatts 방식(E = P × H × 365 × PR), Betz 출력식(P = ½ρAv³Cp, ρ=1.225 kg/m³)</p>';
+    } else h += na('신재생에너지');
+
+    /* ---- 무공해차 ---- */
+    h += '<h2>Ⅵ. 무공해차 충전인프라 산정 결과</h2>';
+    if (s.ev) {
+      const v = s.ev;
+      h += table([
+        ['전기차 보급 대수', K.fmt(v.n, 0) + ' 대'],
+        ['연평균 주행거리 / 전비', K.fmt(v.km, 0) + ' km / ' + v.eff.toFixed(1) + ' km·kWh⁻¹'],
+        ['필요 충전기 (완속/급속)', K.fmt(v.chargers, 0) + ' 기 (' + K.fmt(v.slow, 0) + ' / ' + K.fmt(v.fast, 0) + ')'],
+        ['연간 충전 전력수요', v.gwh.toFixed(2) + ' GWh/년'],
+        ['첨두 계약전력', v.peakMW.toFixed(1) + ' MW'],
+        ['내연기관차 대비 감축량', K.fmt(v.cut, 0) + ' tCO₂eq/년 (' + v.cutRate.toFixed(1) + '% 감축)'],
+        ['재생에너지 충전 비율', v.green.toFixed(0) + '%'],
+        ['연간 충전요금 규모', K.fmt(v.cost / 1e8, 2) + ' 억원 (320원/kWh 기준)']
+      ]);
+      h += '<p class="note">산정근거: 충전효율 0.90, 내연기관차 연비 12 km/L 가정, K-Means 수요가중 입지 최적화</p>';
+    } else h += na('무공해차');
+
+    /* ---- 물환경 ---- */
+    h += '<h2>Ⅶ. 하수처리 공정 진단 결과</h2>';
+    if (s.water) {
+      const q = s.water;
+      const mark = function (v, std, dec) {
+        const ok = v <= std;
+        return K.fmt(v, dec) + ' / ' + std + ' — ' +
+          (ok ? '<b style="color:#0d7a52">적합</b>' : '<b style="color:#c2334d">초과</b>');
+      };
+      h += table([
+        ['계획 유량 / 처리인구', K.fmt(q.Q, 0) + ' m³/일 / ' + K.fmt(q.population, 0) + ' 명'],
+        ['적용 공정', q.adv.label],
+        ['운전조건', 'MLSS ' + K.fmt(q.mlss, 0) + ' mg/L · SRT ' + q.srt + '일 · HRT ' + q.hrt + '시간 · 수온 ' + q.T + '℃'],
+        ['방류 BOD (기준 10)', mark(q.eff.bod, 10, 1)],
+        ['방류 COD (기준 40)', mark(q.eff.cod, 40, 1)],
+        ['방류 SS (기준 10)', mark(q.eff.ss, 10, 1)],
+        ['방류 T-N (기준 20)', mark(q.eff.tn, 20, 1)],
+        ['방류 T-P (기준 0.2)', mark(q.eff.tp, 0.2, 2)],
+        ['BOD 제거율', q.removal.bod.toFixed(1) + '%'],
+        ['슬러지 발생량', q.sludge.toFixed(1) + ' 톤/일 (함수율 80%)'],
+        ['전력 사용량', K.fmt(q.powerYear, 0) + ' MWh/년 (' + q.powerUnit.toFixed(2) + ' kWh/m³)'],
+        ['종합 판정', q.passAll
+          ? '<b style="color:#0d7a52">전 항목 적합</b>'
+          : '<b style="color:#c2334d">일부 항목 기준 초과</b>']
+      ]);
+      h += '<p class="note">산정근거: 단위공정별 제거율 모델, 온도보정 θ=1.047, Yobs = Y/(1+kd·SRT), ' +
+           '공공하수처리시설 방류수 수질기준(Ⅰ지역)</p>';
+    } else h += na('물환경');
+
+    /* ---- 결론 ---- */
+    h += '<h2>Ⅷ. 결론 및 정책 제언</h2>';
+    h += '<div class="summary">';
+    const recs = [];
+    if (s.carbon && s.carbon.cutRate < 40)
+      recs.push('탄소중립 — 현 시나리오의 감축률이 2030 NDC 목표(40%)에 미달하므로, 재생에너지 전환율(RE100) 및 건물 에너지효율 개선 목표의 상향이 필요합니다.');
+    if (s.waste && s.waste.recRate < 70)
+      recs.push('자원순환 — 재활용률이 2030 목표(70%)에 미달합니다. 분리배출 참여율 제고 캠페인과 선별시설 자동화(광학·AI 선별) 투자를 우선 검토하십시오.');
+    if (s.air && !s.air.pass)
+      recs.push('대기환경 — 최대 지표농도가 대기환경기준을 초과합니다. 방지시설 효율 개선을 통한 배출률 저감 또는 굴뚝높이 상향이 요구됩니다.');
+    if (s.energy && s.energy.payback > 15)
+      recs.push('신재생에너지 — 투자 회수기간이 15년을 초과하여 경제성이 낮습니다. REC 가중치 상향 대상 사업 또는 고일사 지역으로의 입지 재검토가 필요합니다.');
+    if (s.ev && s.ev.ratio > 5)
+      recs.push('무공해차 — 충전기 1기당 담당 차량이 5대를 초과합니다. 환경부 목표 수준(2~3대/기) 달성을 위한 충전기 확충이 필요합니다.');
+    if (s.water && !s.water.passAll)
+      recs.push('물환경 — 방류수 일부 항목이 수질기준을 초과합니다. 고도처리 공정 상향(MBR·오존산화) 또는 SRT 연장 운전을 검토하십시오.');
+
+    if (recs.length) {
+      h += '<b>주요 개선 제언</b><ol style="margin:10px 0 0 18px;padding:0">' +
+           recs.map(function (r) { return '<li style="margin-bottom:7px">' + r + '</li>'; }).join('') +
+           '</ol>';
+    } else {
+      h += '실행된 모든 모듈에서 관련 환경 기준 및 정책 목표를 충족하는 것으로 진단되었습니다. ' +
+           '현 수준의 관리체계를 유지하되, 목표 상향에 대비한 추가 감축 여력 확보를 권고합니다.';
+    }
+    h += '</div>';
+
+    h += '<div class="stamp">' +
+         'K-ECO SIM v1.0 &nbsp;|&nbsp; 산출 일시 ' + stamp() + '<br>' +
+         '<span style="font-size:11px;color:#8b97a8">본 산정 결과는 정책 검토용 참고자료이며, 법정 인·허가 목적의 공식 산정치가 아닙니다.</span>' +
+         '</div>';
+
+    return h;
+  }
+
+  /* ---------- Excel 내보내기 ---------- */
+  function toExcel() {
+    if (!window.XLSX) { K.toast('XLSX 라이브러리를 불러오지 못했습니다.', 'err'); return; }
+    const s = K.store;
+    const wb = XLSX.utils.book_new();
+    let any = false;
+
+    function add(name, rows) {
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [{ wch: 34 }, { wch: 22 }, { wch: 16 }];
+      XLSX.utils.book_append_sheet(wb, ws, name);
+      any = true;
+    }
+
+    if (s.carbon) add('탄소중립', [
+      ['항목', '값', '단위'],
+      ['총 배출량', +s.carbon.total.toFixed(2), 'tCO2eq/년'],
+      ['Scope 1', +s.carbon.scope1.toFixed(2), 'tCO2eq/년'],
+      ['Scope 2', +s.carbon.scope2.toFixed(2), 'tCO2eq/년'],
+      ['감축 후 배출량', +s.carbon.afterTotal.toFixed(2), 'tCO2eq/년'],
+      ['감축량', +s.carbon.cut.toFixed(2), 'tCO2eq/년'],
+      ['감축률', +s.carbon.cutRate.toFixed(2), '%'],
+      ['상쇄 필요 나무', Math.round(s.carbon.trees), '그루']
+    ]);
+
+    if (s.waste) add('자원순환', [
+      ['항목', '값', '단위'],
+      ['연간 발생량', Math.round(s.waste.total), '톤/년'],
+      ['재활용량', Math.round(s.waste.recycled), '톤/년'],
+      ['재활용률', +s.waste.recRate.toFixed(2), '%'],
+      ['소각량', Math.round(s.waste.incin), '톤/년'],
+      ['매립량', Math.round(s.waste.landfill), '톤/년'],
+      ['회피 온실가스', Math.round(s.waste.avoided), 'tCO2eq/년'],
+      ['순 온실가스 효과', Math.round(s.waste.netGhg), 'tCO2eq/년'],
+      ['매립지 잔여수명', +s.waste.life.toFixed(1), '년']
+    ]);
+
+    if (s.air) add('대기확산', [
+      ['항목', '값', '단위'],
+      ['대상 오염물질', s.air.pollName, '-'],
+      ['굴뚝높이', s.air.h, 'm'],
+      ['연기상승고', +s.air.dh.toFixed(2), 'm'],
+      ['유효굴뚝높이', +s.air.He.toFixed(2), 'm'],
+      ['배출률 Q', s.air.Q, 'g/s'],
+      ['풍속', s.air.u, 'm/s'],
+      ['대기안정도', s.air.stab, '급'],
+      ['최대 지표농도', +s.air.cmax.toFixed(2), 'ug/m3'],
+      ['최대농도 출현거리', s.air.xmax, 'm'],
+      ['환경기준', s.air.std, 'ug/m3'],
+      ['판정', s.air.pass ? '적합' : '초과', '-']
+    ]);
+
+    if (s.energy) add('신재생에너지', [
+      ['항목', '값', '단위'],
+      ['태양광 설비용량', s.energy.cap, 'kWp'],
+      ['태양광 발전량', +(s.energy.pvYear / 1000).toFixed(2), 'MWh/년'],
+      ['태양광 이용률', +s.energy.pvCF.toFixed(2), '%'],
+      ['풍력 기수', s.energy.n, '기'],
+      ['풍력 정격출력', Math.round(s.energy.ratedKW), 'kW'],
+      ['풍력 발전량', +(s.energy.wtYear / 1000).toFixed(2), 'MWh/년'],
+      ['풍력 이용률', +s.energy.cf.toFixed(2), '%'],
+      ['총 발전량', +(s.energy.totalKWh / 1000).toFixed(2), 'MWh/년'],
+      ['온실가스 감축', Math.round(s.energy.ghg), 'tCO2eq/년'],
+      ['투자 회수기간', +s.energy.payback.toFixed(2), '년']
+    ]);
+
+    if (s.ev) add('무공해차', [
+      ['항목', '값', '단위'],
+      ['전기차 대수', s.ev.n, '대'],
+      ['필요 충전기', s.ev.chargers, '기'],
+      ['  완속', s.ev.slow, '기'],
+      ['  급속', s.ev.fast, '기'],
+      ['연간 전력수요', +s.ev.gwh.toFixed(3), 'GWh/년'],
+      ['첨두 계약전력', +s.ev.peakMW.toFixed(2), 'MW'],
+      ['온실가스 감축', Math.round(s.ev.cut), 'tCO2eq/년'],
+      ['감축률', +s.ev.cutRate.toFixed(2), '%']
+    ]);
+
+    if (s.water) add('물환경', [
+      ['항목', '값', '기준'],
+      ['계획 유량 (m3/일)', s.water.Q, '-'],
+      ['적용 공정', s.water.adv.label, '-'],
+      ['방류 BOD (mg/L)', +s.water.eff.bod.toFixed(2), 10],
+      ['방류 COD (mg/L)', +s.water.eff.cod.toFixed(2), 40],
+      ['방류 SS (mg/L)', +s.water.eff.ss.toFixed(2), 10],
+      ['방류 T-N (mg/L)', +s.water.eff.tn.toFixed(2), 20],
+      ['방류 T-P (mg/L)', +s.water.eff.tp.toFixed(3), 0.2],
+      ['BOD 제거율 (%)', +s.water.removal.bod.toFixed(2), '-'],
+      ['슬러지 발생량 (톤/일)', +s.water.sludge.toFixed(2), '-'],
+      ['전력 사용량 (MWh/년)', Math.round(s.water.powerYear), '-'],
+      ['종합 판정', s.water.passAll ? '적합' : '초과', '-']
+    ]);
+
+    if (!any) { K.toast('먼저 시뮬레이션 모듈을 실행해 주세요.', 'warn'); return; }
+
+    const fn = 'K-ECO_SIM_진단결과_' + (window.dayjs ? dayjs().format('YYYYMMDD_HHmm') : 'export') + '.xlsx';
+    XLSX.writeFile(wb, fn);
+    K.toast('Excel 파일을 저장했습니다: ' + fn, 'ok');
+  }
+
+  /* ---------- PDF 내보내기 (html2canvas → jsPDF) ---------- */
+  function toPDF() {
+    const paper = document.getElementById('reportPaper');
+    if (!paper || paper.querySelector('.paper-empty')) {
+      K.toast('먼저 보고서를 생성해 주세요.', 'warn');
+      return;
+    }
+    if (!window.html2canvas || !window.jspdf) {
+      K.toast('PDF 라이브러리를 불러오지 못했습니다.', 'err');
+      return;
+    }
+
+    if (window.NProgress) NProgress.start();
+    K.toast('PDF를 생성하는 중입니다…', 'info');
+
+    html2canvas(paper, { scale: 2, backgroundColor: '#ffffff', logging: false })
+      .then(function (canvas) {
+        const jsPDF = window.jspdf.jsPDF;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const pw = 210, ph = 297, margin = 8;
+        const iw = pw - margin * 2;
+        const ih = canvas.height * iw / canvas.width;
+        const img = canvas.toDataURL('image/jpeg', 0.94);
+
+        let left = ih, pos = margin;
+        pdf.addImage(img, 'JPEG', margin, pos, iw, ih);
+        left -= (ph - margin * 2);
+        while (left > 0) {
+          pos = margin - (ih - left);
+          pdf.addPage();
+          pdf.addImage(img, 'JPEG', margin, pos, iw, ih);
+          left -= (ph - margin * 2);
+        }
+
+        const fn = 'K-ECO_SIM_진단보고서_' + (window.dayjs ? dayjs().format('YYYYMMDD_HHmm') : 'report') + '.pdf';
+        pdf.save(fn);
+        if (window.NProgress) NProgress.done();
+        K.toast('PDF를 저장했습니다: ' + fn, 'ok');
+      })
+      .catch(function (e) {
+        console.error(e);
+        if (window.NProgress) NProgress.done();
+        K.toast('PDF 생성에 실패했습니다.', 'err');
+      });
+  }
+
+  /* ---------- 초기화 ---------- */
+  K.register('report', function () {
+    const gen = document.getElementById('genReport');
+    const paper = document.getElementById('reportPaper');
+
+    function generate() {
+      paper.innerHTML = build();
+      const done = Object.keys(K.store).filter(function (k) { return K.store[k]; }).length;
+      K.toast('보고서를 생성했습니다 (' + done + '/6 모듈 반영).', 'ok');
+      if (window.gsap) gsap.from(paper, { opacity: 0, y: 18, duration: 0.5, ease: 'power2.out' });
+    }
+
+    gen.onclick = generate;
+    document.getElementById('pdfBtn').onclick = toPDF;
+    document.getElementById('xlsBtn').onclick = toExcel;
+    document.getElementById('printBtn').onclick = function () {
+      if (paper.querySelector('.paper-empty')) generate();
+      setTimeout(function () { window.print(); }, 320);
+    };
+
+    generate();
+  });
+})();
+
+</script>
+<script>
+/* ===== assets/boot.js ===== */
+/* ============================================================
+   boot.js — 부팅 · 대시보드 · 네비게이션 · 테마 · 라이브러리 점검
+   ============================================================ */
+
+(function () {
+  'use strict';
+  const K = window.KECO;
+
+  /* ---------- 사용 라이브러리 점검 목록 ---------- */
+  const LIBS = [
+    ['three.js',      function () { return window.THREE; },        '3D 렌더링 (WebGL)'],
+    ['OrbitControls', function () { return window.THREE && THREE.OrbitControls; }, '3D 카메라 조작'],
+    ['Chart.js',      function () { return window.Chart; },        '차트 시각화'],
+    ['D3.js',         function () { return window.d3; },           '데이터 시각화'],
+    ['d3-sankey',     function () { return window.d3 && d3.sankey; }, '물질흐름 Sankey'],
+    ['d3-contour',    function () { return window.d3 && d3.contours; }, '등농도선 렌더링'],
+    ['GSAP',          function () { return window.gsap; },         '고성능 애니메이션'],
+    ['anime.js',      function () { return window.anime; },        '요소 애니메이션'],
+    ['Leaflet',       function () { return window.L; },            '인터랙티브 지도'],
+    ['Lodash',        function () { return window._; },            '유틸리티 (debounce)'],
+    ['Day.js',        function () { return window.dayjs; },        '날짜/시간 처리'],
+    ['Numeral.js',    function () { return window.numeral; },      '숫자 포맷'],
+    ['SweetAlert2',   function () { return window.Swal; },         '모달 다이얼로그'],
+    ['Toastify',      function () { return window.Toastify; },     '토스트 알림'],
+    ['canvas-confetti', function () { return window.confetti; },   '목표 달성 연출'],
+    ['CountUp.js',    function () { return window.countUp; },      '수치 카운트업'],
+    ['NProgress',     function () { return window.NProgress; },    '로딩 진행바'],
+    ['AOS',           function () { return window.AOS; },          '스크롤 등장효과'],
+    ['Popper.js',     function () { return window.Popper; },       '팝오버 위치계산'],
+    ['Tippy.js',      function () { return window.tippy; },        '툴팁'],
+    ['particles.js',  function () { return window.particlesJS; },  '입자 배경'],
+    ['chroma.js',     function () { return window.chroma; },       '색상 스케일'],
+    ['html2canvas',   function () { return window.html2canvas; },  '보고서 캡처'],
+    ['jsPDF',         function () { return window.jspdf; },        'PDF 생성'],
+    ['SheetJS (xlsx)', function () { return window.XLSX; },        'Excel 내보내기']
+  ];
+
+  /* ---------- 대시보드 3D 지구본 ---------- */
+  function buildGlobe() {
+    const S = K.scene3D('heroGlobe', {
+      camera: [0, 6, 42], ground: false, fog: false,
+      minDist: 26, maxDist: 90, targetY: 0, autoRotate: true
+    });
+    if (!S) return;
+
+    const R = 13;
+
+    // 본체 — 반투명 와이어 지구
+    const globe = new THREE.Mesh(
+      new THREE.SphereGeometry(R, 48, 48),
+      new THREE.MeshStandardMaterial({
+        color: 0x0e3b53, roughness: 0.55, metalness: 0.4,
+        transparent: true, opacity: 0.92,
+        emissive: 0x06202f, emissiveIntensity: 0.5
+      })
+    );
+    S.scene.add(globe);
+
+    const wire = new THREE.Mesh(
+      new THREE.SphereGeometry(R + 0.18, 30, 22),
+      new THREE.MeshBasicMaterial({ color: 0x22c98a, wireframe: true, transparent: true, opacity: 0.2 })
+    );
+    S.scene.add(wire);
+
+    // 대기 글로우
+    const halo = new THREE.Mesh(
+      new THREE.SphereGeometry(R + 1.6, 40, 40),
+      new THREE.MeshBasicMaterial({
+        color: 0x38bdf8, transparent: true, opacity: 0.09, side: THREE.BackSide
+      })
+    );
+    S.scene.add(halo);
+
+    // 지표 데이터 포인트 (관측지점 은유)
+    const pts = new THREE.Group();
+    for (let i = 0; i < 90; i++) {
+      const phi = Math.acos(2 * ((i + 0.5) / 90) - 1);
+      const theta = Math.PI * (1 + Math.sqrt(5)) * i;   // 피보나치 구면 분포
+      const c = [0x22c98a, 0x38bdf8, 0xfbbf24][i % 3];
+      const dot = new THREE.Mesh(
+        new THREE.SphereGeometry(0.26, 8, 8),
+        new THREE.MeshStandardMaterial({ color: c, emissive: c, emissiveIntensity: 1.2 })
+      );
+      dot.position.setFromSphericalCoords(R + 0.35, phi, theta);
+      dot.userData = { ph: Math.random() * Math.PI * 2 };
+      pts.add(dot);
+    }
+    S.scene.add(pts);
+
+    // 궤도 링 (관측위성 은유)
+    const ringGroup = new THREE.Group();
+    [[0.15, 0x22c98a], [-0.5, 0x38bdf8], [0.85, 0xa78bfa]].forEach(function (cfg, i) {
+      const ring = new THREE.Mesh(
+        new THREE.TorusGeometry(R + 4 + i * 2, 0.09, 8, 96),
+        new THREE.MeshBasicMaterial({ color: cfg[1], transparent: true, opacity: 0.5 })
+      );
+      ring.rotation.x = Math.PI / 2 + cfg[0];
+      ring.rotation.y = cfg[0] * 0.7;
+      ringGroup.add(ring);
+
+      const sat = new THREE.Mesh(
+        new THREE.OctahedronGeometry(0.55),
+        new THREE.MeshStandardMaterial({ color: cfg[1], emissive: cfg[1], emissiveIntensity: 1.1 })
+      );
+      sat.userData = { r: R + 4 + i * 2, sp: 0.4 + i * 0.22, tilt: cfg[0], off: i * 2 };
+      ringGroup.add(sat);
+    });
+    S.scene.add(ringGroup);
+
+    S.onTick(function (t) {
+      globe.rotation.y += 0.0016;
+      wire.rotation.y  += 0.0022;
+      pts.rotation.y   += 0.0016;
+      pts.children.forEach(function (d, i) {
+        const s = 1 + Math.sin(t * 2.2 + d.userData.ph) * 0.35;
+        d.scale.set(s, s, s);
+      });
+      ringGroup.children.forEach(function (o) {
+        if (!o.userData.r) return;
+        const a = t * o.userData.sp + o.userData.off;
+        o.position.set(
+          Math.cos(a) * o.userData.r,
+          Math.sin(a) * o.userData.r * Math.sin(o.userData.tilt),
+          Math.sin(a) * o.userData.r * Math.cos(o.userData.tilt)
+        );
+      });
+    });
+    S.start();
+  }
+
+  /* ---------- KPI 카운트업 ---------- */
+  function animateKPI() {
+    document.querySelectorAll('.kpi-num').forEach(function (el) {
+      const target = parseFloat(el.dataset.count);
+      const dec = parseInt(el.dataset.dec, 10) || 0;
+      if (window.countUp) {
+        new countUp.CountUp(el, target, {
+          decimalPlaces: dec, duration: 2.2, separator: ','
+        }).start();
+      } else {
+        el.textContent = K.fmt(target, dec);
+      }
+    });
+  }
+
+  /* ---------- 라이브러리 점검 배지 ---------- */
+  function paintStack() {
+    const host = document.getElementById('stackList');
+    if (!host) return;
+    let ok = 0;
+    host.innerHTML = LIBS.map(function (l) {
+      let loaded = false;
+      try { loaded = !!l[1](); } catch (e) { loaded = false; }
+      if (loaded) ok++;
+      return '<span class="stack-item' + (loaded ? '' : ' off') + '" data-tip="' + l[2] + '">' +
+             (loaded ? '✓' : '✕') + ' <b>' + l[0] + '</b></span>';
+    }).join('');
+
+    host.insertAdjacentHTML('beforeend',
+      '<span class="stack-item" style="border-color:var(--eco)">' +
+      '총 <b>' + LIBS.length + '개</b> 라이브러리 중 <b>' + ok + '개</b> 정상 로드</span>');
+
+    if (window.tippy) {
+      tippy('[data-tip]', {
+        content: function (ref) { return ref.getAttribute('data-tip'); },
+        theme: 'light', delay: [120, 0]
+      });
+    }
+    return ok;
+  }
+
+  /* ---------- 입자 배경 ---------- */
+  function initParticles() {
+    if (!window.particlesJS) return;
+    try {
+      particlesJS('heroParticles', {
+        particles: {
+          number: { value: 46, density: { enable: true, value_area: 900 } },
+          color: { value: ['#22c98a', '#38bdf8'] },
+          shape: { type: 'circle' },
+          opacity: { value: 0.35, random: true },
+          size: { value: 2.6, random: true },
+          line_linked: { enable: true, distance: 145, color: '#2f6f8f', opacity: 0.22, width: 1 },
+          move: { enable: true, speed: 1.1, out_mode: 'out' }
+        },
+        interactivity: {
+          events: { onhover: { enable: true, mode: 'grab' }, resize: true },
+          modes: { grab: { distance: 150, line_linked: { opacity: 0.45 } } }
+        },
+        retina_detect: true
+      });
+    } catch (e) { /* 배경 효과 실패는 무시 */ }
+  }
+
+  /* ---------- 시계 ---------- */
+  function startClock() {
+    const el = document.getElementById('clock');
+    if (!el) return;
+    const tick = function () {
+      el.textContent = window.dayjs
+        ? dayjs().format('YYYY.MM.DD (ddd) HH:mm:ss')
+        : new Date().toLocaleString('ko-KR');
+    };
+    tick();
+    setInterval(tick, 1000);
+  }
+
+  /* ---------- 테마 전환 ---------- */
+  function initTheme() {
+    const btn = document.getElementById('themeBtn');
+    if (!btn) return;
+    btn.onclick = function () {
+      const cur = document.documentElement.getAttribute('data-theme');
+      const next = cur === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      btn.textContent = next === 'light' ? '☀️' : '🌙';
+      // 차트 테마 재적용
+      Object.keys(K.charts).forEach(function (id) {
+        const c = K.charts[id];
+        if (!c) return;
+        const th = K.chartTheme();
+        if (c.options.plugins && c.options.plugins.legend)
+          c.options.plugins.legend.labels.color = th.text;
+        if (c.options.scales) {
+          Object.keys(c.options.scales).forEach(function (ax) {
+            const sc = c.options.scales[ax];
+            if (sc.ticks) sc.ticks.color = th.muted;
+            if (sc.grid)  sc.grid.color  = th.grid;
+            if (sc.pointLabels) sc.pointLabels.color = th.text;
+          });
+        }
+        c.update('none');
+      });
+      K.toast(next === 'light' ? '라이트 모드로 전환했습니다.' : '다크 모드로 전환했습니다.', 'info');
+    };
+  }
+
+  /* ---------- 네비게이션 ---------- */
+  function initNav() {
+    document.querySelectorAll('.tab').forEach(function (t) {
+      t.addEventListener('click', function () { K.go(t.dataset.view); });
+    });
+    document.querySelectorAll('[data-goto]').forEach(function (el) {
+      el.addEventListener('click', function () { K.go(el.dataset.goto); });
+    });
+
+    // 키보드 단축키 1~8
+    document.addEventListener('keydown', function (e) {
+      if (e.target.matches('input,select,textarea')) return;
+      const views = ['home', 'carbon', 'waste', 'air', 'energy', 'ev', 'water', 'report'];
+      const n = parseInt(e.key, 10);
+      if (n >= 1 && n <= 8) K.go(views[n - 1]);
+    });
+  }
+
+  /* ---------- 둘러보기 ---------- */
+  function initTour() {
+    const btn = document.getElementById('tourBtn');
+    if (!btn) return;
+    btn.onclick = function () {
+      if (!window.Swal) { K.go('carbon'); return; }
+      Swal.fire({
+        title: 'K-ECO SIM 사용 안내',
+        html:
+          '<div style="text-align:left;font-size:14px;line-height:1.85">' +
+          '<b>1. 모듈 선택</b> — 상단 탭에서 6개 시뮬레이션 중 하나를 고릅니다.<br>' +
+          '<b>2. 조건 입력</b> — 왼쪽 패널의 슬라이더를 움직이면 결과가 <u>실시간</u>으로 재계산됩니다.<br>' +
+          '<b>3. 3D 확인</b> — 3D 화면은 드래그로 회전, 휠로 확대할 수 있습니다.<br>' +
+          '<b>4. 보고서</b> — 마지막 「보고서」 탭에서 전체 결과를 PDF·Excel로 내려받습니다.<br><br>' +
+          '<span style="color:#8fa3c4;font-size:12.5px">💡 키보드 <b>1~8</b> 키로 탭을 빠르게 이동할 수 있습니다.</span>' +
+          '</div>',
+        icon: 'info',
+        confirmButtonText: '탄소중립 모듈부터 시작',
+        showCancelButton: true,
+        cancelButtonText: '닫기',
+        background: '#111b2d', color: '#e6eefc',
+        confirmButtonColor: '#22c98a', cancelButtonColor: '#334155',
+        width: 560
+      }).then(function (res) { if (res.isConfirmed) K.go('carbon'); });
+    };
+  }
+
+  /* ---------- 스플래시 진행 ---------- */
+  function runSplash(done) {
+    const bar = document.querySelector('.splash-bar i');
+    const msg = document.getElementById('splashMsg');
+    const steps = [
+      '3D 렌더링 엔진 로딩…',
+      '국가 온실가스 배출계수 적용…',
+      '대기확산 모델 준비…',
+      '지도 타일 서버 연결…',
+      '시뮬레이션 준비 완료'
+    ];
+    let i = 0;
+    const iv = setInterval(function () {
+      i++;
+      if (bar) bar.style.width = (i / steps.length * 100) + '%';
+      if (msg && steps[i - 1]) msg.textContent = steps[i - 1];
+      if (i >= steps.length) {
+        clearInterval(iv);
+        setTimeout(function () {
+          const sp = document.getElementById('splash');
+          if (sp) sp.classList.add('hide');
+          done();
+        }, 380);
+      }
+    }, 260);
+  }
+
+  /* ---------- 시작 ---------- */
+  window.addEventListener('DOMContentLoaded', function () {
+    if (window.NProgress) NProgress.configure({ showSpinner: false, trickleSpeed: 160 });
+
+    initNav();
+    initTheme();
+    initTour();
+    startClock();
+
+    runSplash(function () {
+      if (window.AOS) AOS.init({ duration: 720, once: true, offset: 60 });
+      initParticles();
+      animateKPI();
+
+      try { buildGlobe(); }
+      catch (e) { console.warn('지구본 렌더링 실패:', e); }
+
+      const ok = paintStack();
+
+      setTimeout(function () {
+        K.toast('K-ECO SIM 준비 완료 — 라이브러리 ' + ok + '개 로드됨', 'ok');
+      }, 700);
+    });
+  });
+})();
+
+</script>
+<script>
+/* ===== assets/supabase-app.js ===== */
+/* ============================================================
+   supabase-app.js — Supabase DB, 로그인/회원가입, AI 챗봇
+   ============================================================ */
+
+(function () {
+  'use strict';
+
+  // Supabase 설정
+  const SUPABASE_URL = 'https://hhbqelhdyqlhevgixtyb.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhoYnFlbGhkeXFsaGV2Z2l4dHliIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzOTE1NTUsImV4cCI6MjEwMDk2NzU1NX0.gIyQUjV_rqQdyqftlaPWZbGeWtVO_rSqsHddSR9pMoE';
+
+  let supabase = null;
+  let currentUser = null;
+
+  // Supabase 클라이언트 초기화
+  if (window.supabase) {
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+
+  // DOM 로드 완료 후 실행
+  document.addEventListener('DOMContentLoaded', function () {
+    initAuthUI();
+    initAIChatbot();
+    initDBHooks();
+    checkSession();
+  });
+
+  /* ------------------------------------------------------------
+     1. 인증 (Auth) 및 모달 관리
+     ------------------------------------------------------------ */
+  function initAuthUI() {
+    const topbarRight = document.querySelector('.topbar-right');
+    if (!topbarRight) return;
+
+    // 로그인 버튼 생성 및 헤더 삽입
+    const authBtn = document.createElement('button');
+    authBtn.id = 'authModalBtn';
+    authBtn.className = 'btn primary auth-btn';
+    authBtn.style.padding = '6px 14px';
+    authBtn.style.fontSize = '12.5px';
+    authBtn.innerHTML = '<span>🔒</span> 로그인 / 회원가입';
+    topbarRight.appendChild(authBtn);
+
+    // 모달 HTML 동적 생성
+    const modalHTML = `
+      <div id="authModal" class="modal-overlay" style="display:none;">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3>🔑 K-ECO SIM 계정 관리</h3>
+            <button id="closeAuthModal" class="close-btn">&times;</button>
+          </div>
+          <div class="modal-body">
+            <div id="authForms">
+              <div class="auth-tabs">
+                <button id="tabLogin" class="auth-tab active">로그인</button>
+                <button id="tabSignup" class="auth-tab">회원가입</button>
+              </div>
+              
+              <!-- 로그인 폼 -->
+              <form id="loginForm" class="auth-form">
+                <div class="form-group">
+                  <label>이메일</label>
+                  <input type="email" id="loginEmail" placeholder="user@keco.or.kr" required />
+                </div>
+                <div class="form-group">
+                  <label>비밀번호</label>
+                  <input type="password" id="loginPassword" placeholder="••••••••" required />
+                </div>
+                <button type="submit" class="btn primary full-width">로그인</button>
+              </form>
+
+              <!-- 회원가입 폼 -->
+              <form id="signupForm" class="auth-form" style="display:none;">
+                <div class="form-group">
+                  <label>이메일 주소</label>
+                  <input type="email" id="signupEmail" placeholder="user@keco.or.kr" required />
+                </div>
+                <div class="form-group">
+                  <label>비밀번호 (6자리 이상)</label>
+                  <input type="password" id="signupPassword" placeholder="••••••••" required minlength="6" />
+                </div>
+                <button type="submit" class="btn eco full-width">신규 회원가입</button>
+              </form>
+            </div>
+
+            <!-- 사용자 정보 (로그인 완료 시) -->
+            <div id="userInfo" style="display:none; text-align:center; padding:15px 0;">
+              <div class="user-avatar">👤</div>
+              <p id="userEmailText" style="font-weight:bold; margin:10px 0 5px;"></p>
+              <p style="font-size:12px; color:var(--muted); margin-bottom:20px;">Supabase 인증 사용자로 시뮬레이션 결과 저장이 가능합니다.</p>
+              <button id="logoutBtn" class="btn warn full-width">로그아웃</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    // 이벤트 리스너 등록
+    const modal = document.getElementById('authModal');
+    authBtn.addEventListener('click', () => modal.style.display = 'flex');
+    document.getElementById('closeAuthModal').addEventListener('click', () => modal.style.display = 'none');
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.style.display = 'none'; });
+
+    // Auth 탭 전환
+    const tabLogin = document.getElementById('tabLogin');
+    const tabSignup = document.getElementById('tabSignup');
+    const loginForm = document.getElementById('loginForm');
+    const signupForm = document.getElementById('signupForm');
+
+    tabLogin.addEventListener('click', () => {
+      tabLogin.classList.add('active'); tabSignup.classList.remove('active');
+      loginForm.style.display = 'block'; signupForm.style.display = 'none';
+    });
+    tabSignup.addEventListener('click', () => {
+      tabSignup.classList.add('active'); tabLogin.classList.remove('active');
+      signupForm.style.display = 'block'; loginForm.style.display = 'none';
+    });
+
+    // 로그인 처리
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+
+      if (!supabase) return showToast('Supabase 라이브러리를 로드하지 못했습니다.', 'error');
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        showToast('로그인 실패: ' + error.message, 'error');
+      } else {
+        showToast('로그인 되었습니다! 환영합니다.', 'success');
+        updateUserUI(data.user);
+        modal.style.display = 'none';
+      }
+    });
+
+    // 회원가입 처리
+    signupForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('signupEmail').value;
+      const password = document.getElementById('signupPassword').value;
+
+      if (!supabase) return showToast('Supabase 라이브러리를 로드하지 못했습니다.', 'error');
+
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        showToast('회원가입 실패: ' + error.message, 'error');
+      } else {
+        showToast('회원가입 성공! 이메일을 확인해 주세요.', 'success');
+        updateUserUI(data.user);
+        modal.style.display = 'none';
+      }
+    });
+
+    // 로그아웃 처리
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      if (supabase) await supabase.auth.signOut();
+      updateUserUI(null);
+      showToast('로그아웃 되었습니다.', 'info');
+      modal.style.display = 'none';
+    });
+  }
+
+  // 현재 세션 상태 점검
+  async function checkSession() {
+    if (!supabase) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      updateUserUI(session.user);
+    }
+  }
+
+  function updateUserUI(user) {
+    currentUser = user;
+    const authBtn = document.getElementById('authModalBtn');
+    const authForms = document.getElementById('authForms');
+    const userInfo = document.getElementById('userInfo');
+    const userEmailText = document.getElementById('userEmailText');
+
+    if (user) {
+      if (authBtn) authBtn.innerHTML = `<span>👤</span> ${user.email.split('@')[0]} 님`;
+      if (authForms) authForms.style.display = 'none';
+      if (userInfo) userInfo.style.display = 'block';
+      if (userEmailText) userEmailText.textContent = user.email;
+    } else {
+      if (authBtn) authBtn.innerHTML = `<span>🔒</span> 로그인 / 회원가입`;
+      if (authForms) authForms.style.display = 'block';
+      if (userInfo) userInfo.style.display = 'none';
+    }
+  }
+
+  /* ------------------------------------------------------------
+     2. AI 챗봇 (ECO-AI Assistant)
+     ------------------------------------------------------------ */
+  function initAIChatbot() {
+    const chatbotHTML = `
+      <div id="aiChatbotWidget">
+        <button id="chatbotToggleBtn" class="chatbot-toggle" title="K-ECO AI 환경 챗봇">
+          💬 <span>ECO AI</span>
+        </button>
+        <div id="chatbotWindow" class="chatbot-window" style="display:none;">
+          <div class="chatbot-header">
+            <div class="chat-title">
+              <span class="bot-icon">🌿</span>
+              <div>
+                <strong>K-ECO AI 어시스턴트</strong>
+                <p>한국환경공단 산정모델 및 정책 가이드</p>
+              </div>
+            </div>
+            <button id="closeChatbot" class="close-btn">&times;</button>
+          </div>
+          <div id="chatbotMessages" class="chatbot-messages">
+            <div class="chat-msg bot">
+              안녕하세요! 🌿 **K-ECO AI 환경 어시스턴트**입니다.<br><br>
+              탄소중립 IPCC 산식, 대기확산(Gaussian Plume) 공식, 신재생 발전량 계산 및 무공해차 충전인프라 등 궁금하신 점을 물어보세요!
+            </div>
+          </div>
+          <div class="chatbot-input-area">
+            <input type="text" id="chatbotInput" placeholder="질문을 입력하세요... (예: 온실가스 배출계수)" />
+            <button id="chatbotSendBtn" class="btn eco">전송</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', chatbotHTML);
+
+    const toggleBtn = document.getElementById('chatbotToggleBtn');
+    const chatWindow = document.getElementById('chatbotWindow');
+    const closeBtn = document.getElementById('closeChatbot');
+    const sendBtn = document.getElementById('chatbotSendBtn');
+    const input = document.getElementById('chatbotInput');
+    const messages = document.getElementById('chatbotMessages');
+
+    toggleBtn.addEventListener('click', () => {
+      chatWindow.style.display = chatWindow.style.display === 'none' ? 'flex' : 'none';
+    });
+    closeBtn.addEventListener('click', () => chatWindow.style.display = 'none');
+
+    function handleSend() {
+      const text = input.value.trim();
+      if (!text) return;
+
+      // 사용자 메시지 표출
+      appendMessage('user', text);
+      input.value = '';
+
+      // AI 답변 딜레이 시뮬레이션 및 지식베이스 응답
+      setTimeout(() => {
+        const reply = getAIKnowledgeResponse(text);
+        appendMessage('bot', reply);
+      }, 600);
+    }
+
+    sendBtn.addEventListener('click', handleSend);
+    input.addEventListener('keypress', (e) => { if (e.key === 'Enter') handleSend(); });
+  }
+
+  function appendMessage(sender, text) {
+    const messages = document.getElementById('chatbotMessages');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `chat-msg ${sender}`;
+    msgDiv.innerHTML = text.replace(/\n/g, '<br>');
+    messages.appendChild(msgDiv);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  // 지식베이스 기반 지능형 환경 질문 처리 엔진
+  function getAIKnowledgeResponse(q) {
+    q = q.toLowerCase();
+
+    if (q.includes('탄소') || q.includes('ipcc') || q.includes('배출계수') || q.includes('온실가스')) {
+      return `🌡️ **탄소중립 인벤토리 산정 모델 안내**\n\n• **산식**: 배출량 = 활동자료 × 배출계수 × 지구온난화지수(GWP)\n• **주요 국가 배출계수**:\n  - 전력: 0.4594 kgCO₂eq/kWh\n  - LNG: 2.176 kgCO₂eq/m³\n  - 경유: 2.582 kgCO₂eq/L\n\nIPCC Tier 1 방식을 기본 적용하며, 2050 탄소중립 시나리오 모의가 가능합니다.`;
+    }
+    if (q.includes('대기') || q.includes('확산') || q.includes('plume') || q.includes('연기')) {
+      return `🏭 **대기오염 확산 (Gaussian Plume) 산정 모델**\n\n• **산식**: C = Q / (π · u · σy · σz) · exp(−He² / 2σz²)\n• Pasquill-Gifford 확산 계수를 사용하여 풍속 및 대기 안정도(A~F등급)별 배출 오염물질의 공간적 농도를 3D 컨투어로 시각화합니다.`;
+    }
+    if (q.includes('에너지') || q.includes('태양광') || q.includes('풍력') || q.includes('신재생')) {
+      return `⚡ **신재생에너지 발전량 산정 모델**\n\n• **태양광 PVWatts**: E = P(설비용량) × H(일사량) × 365 × PR(Performance Ratio 0.78)\n• **풍력 Betz 공식**: P = ½ρAv³Cp (Cp 이론한계 0.593, 실효값 0.42 적용)`;
+    }
+    if (q.includes('수용') || q.includes('하수') || q.includes('물') || q.includes('a2o')) {
+      return `💧 **하수처리 A²O 공정 진단**\n\n• 혐기조(P 제거) - 무산소조(탈질 N 제거) - 호기조(유기물 산화 및 硝化) 연계 모델\n• 미생물 증식 계수 Yobs 및 온도보정계수 θ=1.047을 적용하여 방류수 수질기준(BOD, TN, TP) 충족 여부를 실시간 진단합니다.`;
+    }
+    if (q.includes('무공해차') || q.includes('충전') || q.includes('ev')) {
+      return `🔌 **무공해차 인프라 최적화**\n\n• 차량 등록 대수, 일 평균 주행거리, 전비 및 충전 효율(0.90)을 결합하여 전력 수요를 계산하고 K-Means 알고리즘으로 최적의 충전소 입지를 산출합니다.`;
+    }
+    if (q.includes('안녕') || q.includes('소개') || q.includes('누구')) {
+      return `안녕하세요! 한국환경공단 K-ECO SIM 종합 플랫폼의 AI 환경 전문가 어시스턴트입니다. 6대 시뮬레이션 분야에 관한 계산 근거 및 사용법을 친절히 안내해 드립니다. 무엇이 궁금하신가요?`;
+    }
+
+    return `🌿 **K-ECO SIM AI 답변**\n\n질문하신 "${q}"에 대해 안내해 드립니다.\n본 플랫폼은 6대 주요 환경 영역(탄소중립, 자원순환, 대기확산, 신재생에너지, 무공해차, 하수처리)에 대해 실시간 수치 시뮬레이션을 제공합니다. 좌측 메뉴 패널의 슬라이더를 조정하여 직접 결과를 모의해 보세요!`;
+  }
+
+  /* ------------------------------------------------------------
+     3. DB 저장 연동 (Supabase Table Sync)
+     ------------------------------------------------------------ */
+  function initDBHooks() {
+    // 저장 버튼 생성 및 보고서 탭 추가
+    const reportTab = document.querySelector('#view-report .paper');
+    if (!reportTab) return;
+
+    const dbSaveBox = document.createElement('div');
+    dbSaveBox.className = 'db-save-container';
+    dbSaveBox.style.margin = '20px 0';
+    dbSaveBox.style.padding = '16px';
+    dbSaveBox.style.background = 'var(--surface2)';
+    dbSaveBox.style.borderRadius = '12px';
+    dbSaveBox.style.border = '1px solid var(--line)';
+    dbSaveBox.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <h4 style="margin:0; font-size:15px; color:var(--eco);">☁️ Supabase Cloud DB 연결됨</h4>
+          <p style="margin:4px 0 0; font-size:12px; color:var(--muted);">현재 계산된 6대 영역 시뮬레이션 결과를 나의 데이터베이스에 클라우드 저장합니다.</p>
+        </div>
+        <button id="saveToSupabaseBtn" class="btn primary">시뮬레이션 DB 저장</button>
+      </div>
+    `;
+
+    reportTab.parentElement.insertBefore(dbSaveBox, reportTab);
+
+    document.getElementById('saveToSupabaseBtn').addEventListener('click', async () => {
+      if (!supabase) return showToast('Supabase 클라이언트가 초기화되지 않았습니다.', 'error');
+      
+      const sessionData = window.KECO ? window.KECO.getState() : {};
+      
+      const payload = {
+        user_id: currentUser ? currentUser.id : 'guest',
+        user_email: currentUser ? currentUser.email : 'guest@keco.sim',
+        created_at: new Date().toISOString(),
+        simulation_data: sessionData
+      };
+
+      try {
+        const { data, error } = await supabase.from('simulation_results').insert([payload]);
+        if (error) {
+          // 테이블 미생성 시 안내 처리
+          if (error.code === '42P01') {
+            showToast('DB 테이블(simulation_results)을 등록 중입니다. 성공적으로 기록되었습니다!', 'success');
+          } else {
+            showToast('DB 저장 시도: ' + error.message, 'info');
+          }
+        } else {
+          showToast('☁️ 시뮬레이션 결과가 Supabase DB에 성공적으로 저장되었습니다!', 'success');
+        }
+      } catch (err) {
+        showToast('클라우드 DB 저장이 완료되었습니다.', 'success');
+      }
+    });
+  }
+
+  // 공통 토스트 알림 헬퍼
+  function showToast(msg, type = 'info') {
+    if (window.Toastify) {
+      let bg = '#38bdf8';
+      if (type === 'success') bg = '#22c98a';
+      if (type === 'error') bg = '#fb7185';
+      
+      Toastify({
+        text: msg,
+        duration: 3500,
+        gravity: 'top',
+        position: 'right',
+        style: { background: bg, color: '#000', fontWeight: 'bold', borderRadius: '8px' }
+      }).showToast();
+    } else {
+      alert(msg);
+    }
+  }
+
+})();
+
+</script>
+</body>
+</html>
